@@ -9,6 +9,29 @@ type Expr interface {
 	String() string
 }
 
+type Bool bool
+
+func (b Bool) String() string {
+	if bool(b) {
+		return "#true"
+	}
+	return "#false"
+}
+
+type AnyOf []Expr
+
+func (a AnyOf) String() string {
+	var xs []string
+	for _, x := range a {
+		xs = append(xs, x.String())
+	}
+	return fmt.Sprintf("#any-of(%s)", strings.Join(xs, " "))
+}
+
+type FullyUnknown struct{}
+
+func (_ FullyUnknown) String() string { return "#unknown" }
+
 type Identifier string
 
 func (i Identifier) String() string {

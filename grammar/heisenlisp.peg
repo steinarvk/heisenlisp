@@ -26,7 +26,16 @@ Expr <- (
   / Identifier
   / String
   / Integer
+  / Bool
+  / Unknown
+  / AnyOf
 )
+
+Bool <- "#" ("true" / "false") {
+  return sexpr.Bool(string(c.text) == "#true"), nil
+}
+Unknown <- "#unknown" { return sexpr.FullyUnknown{}, nil }
+
 
 LPAREN <- "("
 RPAREN <- ")"
@@ -40,7 +49,7 @@ SingleCharEscape <- ["\\/bfnrt]
 UnicodeEscape <- 'u' HexDigit HexDigit HexDigit HexDigit
 HexDigit <- [0-9a-f]i
 
-Identifier <- [a-zA-Z?!+/*.-] [a-zA-Z0-9?!+/*.-]* {
+Identifier <- [a-zA-Z?!+/*.=-] [a-zA-Z0-9?!+/*.=-]* {
   return sexpr.Identifier(strings.ToLower(string(c.text))), nil
 }
 
@@ -74,5 +83,17 @@ ListExpr <- _ LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
 
   return sexpr.ListExpr(rv), nil
 }
+
+AnyOf <- _ "#any-of" LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
+  var rv []sexpr.Expr
+
+  rv = append(rv, first.(sexpr.Expr))
+  for _, another := range more.([]interface{}) {
+    rv = append(rv, another.(sexpr.Expr))
+  }
+
+  return sexpr.AnyOf(rv), nil
+}
+
 
 EOF <- !.
