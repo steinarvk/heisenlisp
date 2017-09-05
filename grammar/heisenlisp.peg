@@ -13,6 +13,8 @@
     "fmt"
     "unicode/utf8"
 
+  	"github.com/steinarvk/heisenlisp/types"
+  
     sexpr "github.com/steinarvk/heisenlisp/expr"
   )
 }
@@ -74,22 +76,22 @@ WhitespaceThenExpr <- sp rv:Expr {
 }
 
 ListExpr <- _ LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
-  var rv []sexpr.Expr
+  var rv []types.Value
 
-  rv = append(rv, first.(sexpr.Expr))
+  rv = append(rv, first.(types.Value))
   for _, another := range more.([]interface{}) {
-    rv = append(rv, another.(sexpr.Expr))
+    rv = append(rv, another.(types.Value))
   }
 
-  return sexpr.ListExpr(rv), nil
+  return sexpr.ListValue(rv), nil
 }
 
 AnyOf <- _ "#any-of" LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
-  var rv []sexpr.Expr
+  var rv []types.Value
 
-  rv = append(rv, first.(sexpr.Expr))
+  rv = append(rv, first.(types.Value))
   for _, another := range more.([]interface{}) {
-    rv = append(rv, another.(sexpr.Expr))
+    rv = append(rv, another.(types.Value))
   }
 
   return sexpr.AnyOf(rv), nil
