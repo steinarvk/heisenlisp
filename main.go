@@ -23,6 +23,7 @@ func mainCore() error {
 	prompt := "..? "
 
 	root := env.New(nil)
+	builtin.BindDefaults(root)
 
 	builtin.Nullary(root, "random!", func() (types.Value, error) {
 		return expr.Integer(rand.Intn(1000)), nil
