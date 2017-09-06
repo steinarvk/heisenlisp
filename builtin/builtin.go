@@ -48,6 +48,21 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 	e.Bind(name, expr.NewFunction(e, name, wrap(name, checker)))
 }
 
+func Integers(e types.Env, name string, f func([]expr.Integer) (types.Value, error)) {
+	checker := func(vs []types.Value) (types.Value, error) {
+		var iparams []expr.Integer
+		for i, v := range vs {
+			iv, ok := v.(expr.Integer)
+			if !ok {
+				return nil, fmt.Errorf("param #%d: want Integer, got %v", i, v)
+			}
+			iparams = append(iparams, iv)
+		}
+		return f(iparams)
+	}
+	e.Bind(name, expr.NewFunction(e, name, wrap(name, checker)))
+}
+
 func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s) }
 
 type ifSpecialForm struct{}
@@ -107,4 +122,59 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 func BindDefaults(e types.Env) {
 	e.Bind("if", &ifSpecialForm{})
 	e.Bind("set!", &setSpecialForm{})
+
+	e.Bind("true", expr.Bool(true))
+	e.Bind("false", expr.Bool(false))
+
+	Unary(e, "not", func(a types.Value) (types.Value, error) {
+		if a.Uncertain() {
+			return nil, fmt.Errorf("TODO: negating uncertain values not yet implemented")
+		}
+
+		return expr.Bool(a.Falsey()), nil
+	})
+
+	Integers(e, "+", func(xs []expr.Integer) (types.Value, error) {
+		var rv int64
+		for _, x := range xs {
+			rv += int64(x)
+		}
+		return expr.Integer(rv), nil
+	})
+
+	Integers(e, "-", func(xs []expr.Integer) (types.Value, error) {
+		switch {
+		case len(xs) == 0:
+			return expr.Integer(0), nil
+		case len(xs) == 1:
+			return expr.Integer(-xs[0]), nil
+		default:
+			rv := int64(xs[0])
+			for _, x := range xs[1:] {
+				rv -= int64(x)
+			}
+			return expr.Integer(rv), nil
+		}
+	})
+
+	Integers(e, "*", func(xs []expr.Integer) (types.Value, error) {
+		rv := int64(1)
+		for _, x := range xs {
+			rv *= int64(x)
+		}
+		return expr.Integer(rv), nil
+	})
+
+	Integers(e, "=", func(xs []expr.Integer) (types.Value, error) {
+		if len(xs) == 0 {
+			return nil, fmt.Errorf("cannot check equality of no values")
+		}
+		v := int64(xs[0])
+		for _, x := range xs[1:] {
+			if int64(x) != v {
+				return expr.Bool(false), nil
+			}
+		}
+		return expr.Bool(true), nil
+	})
 }

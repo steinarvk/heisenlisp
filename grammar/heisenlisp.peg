@@ -25,9 +25,9 @@ SingleExpr <- rv:Expr EOF {
 
 Expr <- (
     ListExpr
-  / Identifier
   / String
   / Integer
+  / Identifier
   / Bool
   / Unknown
   / AnyOf
@@ -63,7 +63,7 @@ String <- '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   return sexpr.String(s), nil
 }
 
-Integer <- [1-9] [0-9]* {
+Integer <- ( "0" / '-'? [1-9] [0-9]* ) {
   n, err := strconv.ParseInt(string(c.text), 10, 64)
   if err != nil {
     return nil, err

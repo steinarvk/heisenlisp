@@ -29,48 +29,6 @@ func mainCore() error {
 		return expr.Integer(rand.Intn(1000)), nil
 	})
 
-	builtin.Binary(root, "+", func(a, b types.Value) (types.Value, error) {
-		an, ok := a.(expr.Integer)
-		if !ok {
-			return nil, fmt.Errorf("not an integer: %v", a)
-		}
-
-		bn, ok := b.(expr.Integer)
-		if !ok {
-			return nil, fmt.Errorf("not an integer: %v", b)
-		}
-
-		return expr.Integer(int64(an) + int64(bn)), nil
-	})
-
-	builtin.Binary(root, "-", func(a, b types.Value) (types.Value, error) {
-		an, ok := a.(expr.Integer)
-		if !ok {
-			return nil, fmt.Errorf("not an integer: %v", a)
-		}
-
-		bn, ok := b.(expr.Integer)
-		if !ok {
-			return nil, fmt.Errorf("not an integer: %v", b)
-		}
-
-		return expr.Integer(int64(an) - int64(bn)), nil
-	})
-
-	builtin.Binary(root, "*", func(a, b types.Value) (types.Value, error) {
-		an, ok := a.(expr.Integer)
-		if !ok {
-			return nil, fmt.Errorf("not an integer: %v", a)
-		}
-
-		bn, ok := b.(expr.Integer)
-		if !ok {
-			return nil, fmt.Errorf("not an integer: %v", b)
-		}
-
-		return expr.Integer(int64(an) * int64(bn)), nil
-	})
-
 	wr.Write([]byte(prompt))
 	wr.Flush()
 
