@@ -7,6 +7,11 @@ type Value interface {
 	Eval(e Env) (Value, error)
 }
 
+type Atom interface {
+	Value
+	AtomEquals(other Atom) bool
+}
+
 type SpecialForm interface {
 	Value
 	Execute(Env, []Value) (Value, error)

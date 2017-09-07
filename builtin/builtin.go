@@ -119,6 +119,19 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 	return value, nil
 }
 
+type quoteSpecialForm struct{}
+
+func (i quoteSpecialForm) String() string                      { return specialFormString("quote") }
+func (i quoteSpecialForm) Falsey() bool                        { return false }
+func (i quoteSpecialForm) Uncertain() bool                     { return false }
+func (i quoteSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i quoteSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	if len(unevaluated) != 1 {
+		return nil, fmt.Errorf("quote: unary special form, got %d params", len(unevaluated))
+	}
+	return unevaluated[0], nil
+}
+
 type defunSpecialForm struct{}
 
 func (i defunSpecialForm) String() string                      { return specialFormString("defun!") }
@@ -126,14 +139,48 @@ func (i defunSpecialForm) Falsey() bool                        { return false }
 func (i defunSpecialForm) Uncertain() bool                     { return false }
 func (i defunSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
-	name, ok := unevaluated[0].(expr.Identifier)
+	if len(unevaluated) < 3 {
+		return nil, fmt.Errorf("defun!: too few arguments")
+	}
+
+	nameSym, ok := unevaluated[0].(expr.Identifier)
 	if !ok {
 		return nil, fmt.Errorf("must defun! symbol as name, not %v", unevaluated[0])
 	}
 
-	formalParams, ok := unevaluated[1].(expr.ListValue)
+	name := string(nameSym)
+	funcVal, err := makeFunction(&name, e, unevaluated[1], unevaluated[2:])
+	if err != nil {
+		return nil, err
+	}
+
+	e.Bind(name, funcVal)
+	return funcVal, nil
+}
+
+type lambdaSpecialForm struct{}
+
+func (i lambdaSpecialForm) String() string                      { return specialFormString("lambda") }
+func (i lambdaSpecialForm) Falsey() bool                        { return false }
+func (i lambdaSpecialForm) Uncertain() bool                     { return false }
+func (i lambdaSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i lambdaSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	if len(unevaluated) < 2 {
+		return nil, fmt.Errorf("lambda: too few arguments")
+	}
+
+	funcVal, err := makeFunction(nil, e, unevaluated[0], unevaluated[1:])
+	if err != nil {
+		return nil, err
+	}
+
+	return funcVal, nil
+}
+
+func makeFunction(namePtr *string, lexicalEnv types.Env, formalParamSpec types.Value, body []types.Value) (types.Value, error) {
+	formalParams, ok := formalParamSpec.(expr.ListValue)
 	if !ok {
-		return nil, fmt.Errorf("must defun! list as params, not %v", unevaluated[0])
+		return nil, fmt.Errorf("params specifier must be list, not %v", formalParamSpec)
 	}
 
 	var formalParamNames []string
@@ -141,16 +188,17 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 	for _, formalParam := range formalParams {
 		s, ok := formalParam.(expr.Identifier)
 		if !ok {
-			return nil, fmt.Errorf("must defun! symbol as formal param, not %v", formalParam)
+			return nil, fmt.Errorf("formal param spec must be symbol, not %v", formalParam)
 		}
 		formalParamNames = append(formalParamNames, string(s))
 	}
 
-	body := unevaluated[2:]
+	name := ""
+	if namePtr != nil {
+		name = *namePtr
+	}
 
-	funcVal := expr.NewLispFunction(e, string(name), formalParamNames, body)
-
-	e.Bind(string(name), funcVal)
+	funcVal := expr.NewLispFunction(lexicalEnv, name, formalParamNames, body)
 
 	return funcVal, nil
 }
@@ -159,7 +207,21 @@ func BindDefaults(e types.Env) {
 	e.Bind("if", &ifSpecialForm{})
 	e.Bind("set!", &setSpecialForm{})
 	e.Bind("defun!", &defunSpecialForm{})
+	e.Bind("lambda", &lambdaSpecialForm{})
+	e.Bind("quote", &quoteSpecialForm{})
 
+	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
+		_, ok := a.(types.Atom)
+		return expr.Bool(ok), nil
+	})
+
+	Binary(e, "_atom-eq?", func(a, b types.Value) (types.Value, error) {
+		av, aok := a.(types.Atom)
+		bv, bok := b.(types.Atom)
+		return expr.Bool(aok && bok && av.AtomEquals(bv)), nil
+	})
+
+	// convenience bindings
 	e.Bind("true", expr.Bool(true))
 	e.Bind("false", expr.Bool(false))
 

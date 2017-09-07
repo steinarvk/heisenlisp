@@ -38,6 +38,12 @@ func TestExpressionsTruthy(t *testing.T) {
 		"(= -1307674368000 (* 2 3 4 5 6 7 8 9 10 -11 12 13 14 15))",
 		`(defun! f (x y z) (- x (* y z)))
 		 (= (f 2 3 4) -10)`,
+		"(_atom-eq? ((lambda (z y x) (+ x (* y z))) 2 3 4) 10)",
+		"(_atom? 42)",
+		`(_atom? "hello")`,
+		"(not (_atom? (lambda (x) x)))",
+		"(_atom? (quote 42))",
+		"(not (_atom? (quote (quote 42))))",
 	}
 
 	for i, s := range exprs {

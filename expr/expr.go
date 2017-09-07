@@ -11,6 +11,11 @@ import (
 
 type Bool bool
 
+func (b Bool) AtomEquals(other types.Atom) bool {
+	o, ok := other.(Bool)
+	return ok && o == b
+}
+
 func (b Bool) Falsey() bool    { return !bool(b) }
 func (b Bool) Uncertain() bool { return false }
 
@@ -62,7 +67,17 @@ func (i Identifier) Eval(e types.Env) (types.Value, error) {
 func (_ Identifier) Falsey() bool    { return false }
 func (_ Identifier) Uncertain() bool { return false }
 
+func (i Identifier) AtomEquals(other types.Atom) bool {
+	o, ok := other.(Identifier)
+	return ok && o == i
+}
+
 type Integer int64
+
+func (i Integer) AtomEquals(other types.Atom) bool {
+	o, ok := other.(Integer)
+	return ok && o == i
+}
 
 func (i Integer) String() string {
 	return fmt.Sprintf("%d", i)
@@ -74,6 +89,11 @@ func (i Integer) Falsey() bool    { return i == 0 }
 func (i Integer) Uncertain() bool { return false }
 
 type String string
+
+func (s String) AtomEquals(other types.Atom) bool {
+	o, ok := other.(String)
+	return ok && o == s
+}
 
 func (s String) String() string {
 	return fmt.Sprintf("%q", string(s))
@@ -178,6 +198,13 @@ func NewLispFunction(env types.Env, name string, formalParams []string, body []t
 	return &LispFunctionValue{name, env, formalParams, body}
 }
 
+func (f *LispFunctionValue) errorprefix() string {
+	if f.name == "" {
+		return "(anonymous function): "
+	}
+	return fmt.Sprintf("%s: ", f.name)
+}
+
 func (f *LispFunctionValue) Call(params []types.Value) (types.Value, error) {
 	var rv types.Value
 	var err error
@@ -185,7 +212,7 @@ func (f *LispFunctionValue) Call(params []types.Value) (types.Value, error) {
 	env := env.New(f.lexicalEnv)
 
 	if len(params) != len(f.formalParams) {
-		return nil, fmt.Errorf("%s: want %d params, got %d", f.name, len(f.formalParams), len(params))
+		return nil, fmt.Errorf("%swant %d params, got %d", f.errorprefix(), len(f.formalParams), len(params))
 	}
 	for i, name := range f.formalParams {
 		env.Bind(name, params[i])
@@ -201,6 +228,9 @@ func (f *LispFunctionValue) Call(params []types.Value) (types.Value, error) {
 }
 
 func (f *LispFunctionValue) String() string {
+	if f.name == "" {
+		return "#<anonymous function>"
+	}
 	return fmt.Sprintf("#<function %q>", f.name)
 }
 func (f *LispFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
