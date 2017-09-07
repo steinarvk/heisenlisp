@@ -41,17 +41,21 @@ func mainCore() error {
 			continue
 		}
 
-		rv, err := parser.Parse("<stdin>", []byte(text))
+		expressionsIntf, err := parser.Parse("<stdin>", []byte(text))
 		if err != nil {
 			wr.Write([]byte(fmt.Sprintf("==! parsing error: %v\n", err)))
 		} else {
-			wr.Write([]byte(fmt.Sprintf("(read) ==> %v\n", rv)))
+			expressions := expressionsIntf.([]interface{})
 
-			evaled, err := rv.(types.Value).Eval(root)
-			if err != nil {
-				wr.Write([]byte(fmt.Sprintf("==! eval error: %v\n", err)))
-			} else {
-				wr.Write([]byte(fmt.Sprintf("(eval) ==> %v\n", evaled)))
+			for _, expression := range expressions {
+				wr.Write([]byte(fmt.Sprintf("(read) ==> %v\n", expression)))
+
+				evaled, err := expression.(types.Value).Eval(root)
+				if err != nil {
+					wr.Write([]byte(fmt.Sprintf("==! eval error: %v\n", err)))
+				} else {
+					wr.Write([]byte(fmt.Sprintf("(eval) ==> %v\n", evaled)))
+				}
 			}
 		}
 

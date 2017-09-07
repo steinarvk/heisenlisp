@@ -36,6 +36,8 @@ func TestExpressionsTruthy(t *testing.T) {
 		"(= 120 (* 2 3 4 5))",
 		"(= 1307674368000 (* 2 3 4 5 6 7 8 9 10 11 12 13 14 15))",
 		"(= -1307674368000 (* 2 3 4 5 6 7 8 9 10 -11 12 13 14 15))",
+		`(defun! f (x y z) (- x (* y z)))
+		 (= (f 2 3 4) -10)`,
 	}
 
 	for i, s := range exprs {
@@ -45,19 +47,30 @@ func TestExpressionsTruthy(t *testing.T) {
 			continue
 		}
 
-		evaled, err := rv.(types.Value).Eval(root)
+		exprs, ok := rv.([]interface{})
+		if !ok {
+			t.Errorf("error parsing #%d %q: %v", i, s, err)
+		}
+
+		var result types.Value
+		for j, xpr := range exprs {
+			result, err = xpr.(types.Value).Eval(root)
+			if err != nil {
+				t.Errorf("error evaluating #%d %q (sub-expression %d: %v): %v", i, s, j, xpr, err)
+				break
+			}
+		}
 		if err != nil {
-			t.Errorf("error evaluating #%d %q: %v", i, s, err)
 			continue
 		}
 
-		if evaled.Uncertain() {
-			t.Errorf("uncertain result for #%d %q: %v", i, s, evaled)
+		if result.Uncertain() {
+			t.Errorf("uncertain result for #%d %q: %v", i, s, result)
 			continue
 		}
 
-		if evaled.Falsey() {
-			t.Errorf("falsey result for #%d %q: %v", i, s, evaled)
+		if result.Falsey() {
+			t.Errorf("falsey result for #%d %q: %v", i, s, result)
 		}
 	}
 }

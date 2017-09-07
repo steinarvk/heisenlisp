@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -145,24 +146,64 @@ func (l ListValue) Uncertain() bool {
 	return false
 }
 
-type FunctionValue struct {
-	name       string
-	lexicalEnv types.Env
-	function   func([]types.Value) (types.Value, error)
+type BuiltinFunctionValue struct {
+	name     string
+	function func([]types.Value) (types.Value, error)
 }
 
-func NewFunction(env types.Env, name string, f func([]types.Value) (types.Value, error)) *FunctionValue {
-	return &FunctionValue{name, env, f}
+func NewBuiltinFunction(name string, f func([]types.Value) (types.Value, error)) *BuiltinFunctionValue {
+	return &BuiltinFunctionValue{name, f}
 }
 
-func (f *FunctionValue) Call(params []types.Value) (types.Value, error) {
+func (f *BuiltinFunctionValue) Call(params []types.Value) (types.Value, error) {
 	return f.function(params)
 }
 
-func (f *FunctionValue) String() string {
+func (f *BuiltinFunctionValue) String() string {
+	return fmt.Sprintf("#<builtin function %q>", f.name)
+}
+func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
+
+func (f *BuiltinFunctionValue) Falsey() bool    { return false }
+func (f *BuiltinFunctionValue) Uncertain() bool { return false }
+
+type LispFunctionValue struct {
+	name         string
+	lexicalEnv   types.Env
+	formalParams []string
+	body         []types.Value
+}
+
+func NewLispFunction(env types.Env, name string, formalParams []string, body []types.Value) *LispFunctionValue {
+	return &LispFunctionValue{name, env, formalParams, body}
+}
+
+func (f *LispFunctionValue) Call(params []types.Value) (types.Value, error) {
+	var rv types.Value
+	var err error
+
+	env := env.New(f.lexicalEnv)
+
+	if len(params) != len(f.formalParams) {
+		return nil, fmt.Errorf("%s: want %d params, got %d", f.name, len(f.formalParams), len(params))
+	}
+	for i, name := range f.formalParams {
+		env.Bind(name, params[i])
+	}
+
+	for _, stmt := range f.body {
+		rv, err = stmt.Eval(env)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return rv, nil
+}
+
+func (f *LispFunctionValue) String() string {
 	return fmt.Sprintf("#<function %q>", f.name)
 }
-func (f *FunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
+func (f *LispFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
-func (f *FunctionValue) Falsey() bool    { return false }
-func (f *FunctionValue) Uncertain() bool { return false }
+func (f *LispFunctionValue) Falsey() bool    { return false }
+func (f *LispFunctionValue) Uncertain() bool { return false }

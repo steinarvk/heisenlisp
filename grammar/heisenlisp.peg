@@ -19,6 +19,10 @@
   )
 }
 
+MultiExpr <- rv:WhitespaceThenExpr+ EOF {
+  return rv, nil
+}
+
 SingleExpr <- rv:Expr EOF {
   return rv, nil
 }
@@ -71,14 +75,13 @@ Integer <- ( "0" / '-'? [1-9] [0-9]* ) {
   return sexpr.Integer(n), nil
 }
 
-WhitespaceThenExpr <- sp rv:Expr {
+WhitespaceThenExpr <- _ rv:Expr {
   return rv, nil
 }
 
-ListExpr <- _ LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
+ListExpr <- _ LPAREN _ more:WhitespaceThenExpr* _ RPAREN {
   var rv []types.Value
 
-  rv = append(rv, first.(types.Value))
   for _, another := range more.([]interface{}) {
     rv = append(rv, another.(types.Value))
   }

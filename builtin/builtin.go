@@ -25,7 +25,7 @@ func Nullary(e types.Env, name string, f func() (types.Value, error)) {
 		}
 		return f()
 	}
-	e.Bind(name, expr.NewFunction(e, name, wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
 }
 
 func Unary(e types.Env, name string, f func(a types.Value) (types.Value, error)) {
@@ -35,7 +35,7 @@ func Unary(e types.Env, name string, f func(a types.Value) (types.Value, error))
 		}
 		return f(vs[0])
 	}
-	e.Bind(name, expr.NewFunction(e, name, wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
 }
 
 func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, error)) {
@@ -45,7 +45,7 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 		}
 		return f(vs[0], vs[1])
 	}
-	e.Bind(name, expr.NewFunction(e, name, wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
 }
 
 func Integers(e types.Env, name string, f func([]expr.Integer) (types.Value, error)) {
@@ -60,7 +60,7 @@ func Integers(e types.Env, name string, f func([]expr.Integer) (types.Value, err
 		}
 		return f(iparams)
 	}
-	e.Bind(name, expr.NewFunction(e, name, wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
 }
 
 func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s) }
@@ -119,9 +119,46 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 	return value, nil
 }
 
+type defunSpecialForm struct{}
+
+func (i defunSpecialForm) String() string                      { return specialFormString("defun!") }
+func (i defunSpecialForm) Falsey() bool                        { return false }
+func (i defunSpecialForm) Uncertain() bool                     { return false }
+func (i defunSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	name, ok := unevaluated[0].(expr.Identifier)
+	if !ok {
+		return nil, fmt.Errorf("must defun! symbol as name, not %v", unevaluated[0])
+	}
+
+	formalParams, ok := unevaluated[1].(expr.ListValue)
+	if !ok {
+		return nil, fmt.Errorf("must defun! list as params, not %v", unevaluated[0])
+	}
+
+	var formalParamNames []string
+
+	for _, formalParam := range formalParams {
+		s, ok := formalParam.(expr.Identifier)
+		if !ok {
+			return nil, fmt.Errorf("must defun! symbol as formal param, not %v", formalParam)
+		}
+		formalParamNames = append(formalParamNames, string(s))
+	}
+
+	body := unevaluated[2:]
+
+	funcVal := expr.NewLispFunction(e, string(name), formalParamNames, body)
+
+	e.Bind(string(name), funcVal)
+
+	return funcVal, nil
+}
+
 func BindDefaults(e types.Env) {
 	e.Bind("if", &ifSpecialForm{})
 	e.Bind("set!", &setSpecialForm{})
+	e.Bind("defun!", &defunSpecialForm{})
 
 	e.Bind("true", expr.Bool(true))
 	e.Bind("false", expr.Bool(false))
