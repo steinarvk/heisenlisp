@@ -3,6 +3,7 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -158,6 +159,50 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 	return funcVal, nil
 }
 
+type letSpecialForm struct{}
+
+func (i letSpecialForm) String() string                      { return specialFormString("let") }
+func (i letSpecialForm) Falsey() bool                        { return false }
+func (i letSpecialForm) Uncertain() bool                     { return false }
+func (i letSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	// (let (bindings) forms...)
+	if len(unevaluated) < 2 {
+		return nil, fmt.Errorf("let: too few arguments")
+	}
+
+	bindings, err := expr.UnwrapList(unevaluated[0])
+	if err != nil {
+		return nil, fmt.Errorf("error unwrapping bindings: %v", err)
+	}
+
+	childEnv := env.New(e)
+
+	for i, binding := range bindings {
+		bindingList, err := expr.UnwrapList(binding)
+		if err != nil {
+			return nil, fmt.Errorf("binding %d: error unwrapping: %v", i, err)
+		}
+		if len(bindingList) != 2 {
+			return nil, fmt.Errorf("binding %d: wrong length (want 2): %d", i, len(bindingList))
+		}
+
+		sym, err := expr.SymbolName(bindingList[0])
+		if err != nil {
+			return nil, fmt.Errorf("binding %d: error getting binding name: %v", i, err)
+		}
+
+		val, err := bindingList[1].Eval(e)
+		if err != nil {
+			return nil, err
+		}
+
+		childEnv.Bind(sym, val)
+	}
+
+	return expr.Progn(childEnv, unevaluated[1:])
+}
+
 type lambdaSpecialForm struct{}
 
 func (i lambdaSpecialForm) String() string                      { return specialFormString("lambda") }
@@ -209,6 +254,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("defun!", &defunSpecialForm{})
 	e.Bind("lambda", &lambdaSpecialForm{})
 	e.Bind("quote", &quoteSpecialForm{})
+	e.Bind("let", &letSpecialForm{})
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)

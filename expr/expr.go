@@ -237,3 +237,35 @@ func (f *LispFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, n
 
 func (f *LispFunctionValue) Falsey() bool    { return false }
 func (f *LispFunctionValue) Uncertain() bool { return false }
+
+func SymbolName(v types.Value) (string, error) {
+	rv, ok := v.(Identifier)
+	if !ok {
+		return "", errors.New("not a symbol")
+	}
+	return string(rv), nil
+}
+
+func UnwrapList(v types.Value) ([]types.Value, error) {
+	rv, ok := v.(ListValue)
+	if !ok {
+		return nil, errors.New("not a list")
+	}
+
+	return []types.Value(rv), nil
+}
+
+func Progn(e types.Env, vs []types.Value) (types.Value, error) {
+	if len(vs) == 0 {
+		return nil, errors.New("no body")
+	}
+	var result types.Value
+	var err error
+	for _, v := range vs {
+		result, err = v.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}

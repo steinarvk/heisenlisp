@@ -44,6 +44,11 @@ func TestExpressionsTruthy(t *testing.T) {
 		"(not (_atom? (lambda (x) x)))",
 		"(_atom? (quote 42))",
 		"(not (_atom? (quote (quote 42))))",
+		`(_atom-eq? (+ 42 95) (let ((x 42) (y 95)) (+ x y)))`,
+		`(_atom-eq? 1
+		  (let ((x 2) (y 3))
+		    (let ((x y) (y x))
+			    (- x y))))`,
 	}
 
 	for i, s := range exprs {
