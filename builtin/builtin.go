@@ -223,9 +223,9 @@ func (i lambdaSpecialForm) Execute(e types.Env, unevaluated []types.Value) (type
 }
 
 func makeFunction(namePtr *string, lexicalEnv types.Env, formalParamSpec types.Value, body []types.Value) (types.Value, error) {
-	formalParams, ok := formalParamSpec.(expr.ListValue)
-	if !ok {
-		return nil, fmt.Errorf("params specifier must be list, not %v", formalParamSpec)
+	formalParams, err := expr.UnwrapList(formalParamSpec)
+	if err != nil {
+		return nil, fmt.Errorf("params specifier must be list, not %v: %v", formalParamSpec, err)
 	}
 
 	var formalParamNames []string

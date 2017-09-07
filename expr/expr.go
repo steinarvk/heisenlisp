@@ -104,17 +104,72 @@ func (s String) Eval(_ types.Env) (types.Value, error) { return s, nil }
 func (s String) Falsey() bool    { return s == "" }
 func (s String) Uncertain() bool { return false }
 
-type ListValue []types.Value
+type NilValue struct{}
 
-func (l ListValue) String() string {
-	var xs []string
-	for _, x := range l {
-		xs = append(xs, x.String())
+func (_ NilValue) Falsey() bool                          { return true }
+func (_ NilValue) Uncertain() bool                       { return false }
+func (_ NilValue) String() string                        { return "#nil" }
+func (v NilValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
+
+func IsNil(v types.Value) bool {
+	_, ok := v.(NilValue)
+	return ok
+}
+
+type ConsValue struct {
+	Car types.Value
+	Cdr types.Value
+}
+
+func (c *ConsValue) asProperList() ([]types.Value, bool) {
+	var rv []types.Value
+
+	node := c
+	for {
+		rv = append(rv, node.Car)
+		if IsNil(node.Cdr) {
+			return rv, true
+		}
+
+		next, ok := node.Cdr.(*ConsValue)
+		if !ok {
+			return nil, false
+		}
+		node = next
 	}
+}
+
+func (c *ConsValue) Falsey() bool { return false }
+func (c *ConsValue) Uncertain() bool {
+	return c.Car.Uncertain() || c.Cdr.Uncertain()
+}
+func (c *ConsValue) String() string {
+	xs := []string{}
+
+	node := c
+	for {
+		xs = append(xs, node.Car.String())
+		next, ok := node.Cdr.(*ConsValue)
+		if !ok {
+			if !IsNil(node.Cdr) {
+				xs = append(xs, ".")
+				xs = append(xs, node.Cdr.String())
+			}
+			break
+		}
+
+		node = next
+	}
+
 	return fmt.Sprintf("(%s)", strings.Join(xs, " "))
 }
 
-func (l ListValue) Eval(e types.Env) (types.Value, error) {
+func (c *ConsValue) Eval(e types.Env) (types.Value, error) {
+	l, ok := c.asProperList()
+	if !ok {
+		return nil, fmt.Errorf("not a proper list")
+	}
+
 	if len(l) < 1 {
 		return nil, errors.New("cannot evaluate empty list")
 	}
@@ -154,16 +209,6 @@ func (l ListValue) Eval(e types.Env) (types.Value, error) {
 	}
 
 	return callable.Call(params)
-}
-
-func (l ListValue) Falsey() bool { return len(l) == 0 }
-func (l ListValue) Uncertain() bool {
-	for _, x := range l {
-		if x.Uncertain() {
-			return true
-		}
-	}
-	return false
 }
 
 type BuiltinFunctionValue struct {
@@ -246,13 +291,37 @@ func SymbolName(v types.Value) (string, error) {
 	return string(rv), nil
 }
 
+func WrapList(vs []types.Value) types.Value {
+	var head, tail *ConsValue
+	for _, v := range vs {
+		nc := &ConsValue{v, NilValue{}}
+		if head == nil {
+			head = nc
+			tail = nc
+		} else {
+			tail.Cdr = nc
+			tail = nc
+		}
+	}
+	return head
+}
+
 func UnwrapList(v types.Value) ([]types.Value, error) {
-	rv, ok := v.(ListValue)
+	if IsNil(v) {
+		return nil, nil
+	}
+
+	rv, ok := v.(*ConsValue)
 	if !ok {
 		return nil, errors.New("not a list")
 	}
 
-	return []types.Value(rv), nil
+	rrv, ok := rv.asProperList()
+	if !ok {
+		return nil, errors.New("not a list")
+	}
+
+	return rrv, nil
 }
 
 func Progn(e types.Env, vs []types.Value) (types.Value, error) {

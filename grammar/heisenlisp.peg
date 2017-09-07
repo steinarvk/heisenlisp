@@ -35,6 +35,7 @@ Expr <- (
   / Bool
   / Unknown
   / AnyOf
+  / Nil
 )
 
 Bool <- "#" ("true" / "false") {
@@ -42,6 +43,7 @@ Bool <- "#" ("true" / "false") {
 }
 Unknown <- "#unknown" { return sexpr.FullyUnknown{}, nil }
 
+Nil <- "#nil" { return sexpr.NilValue{}, nil }
 
 LPAREN <- "("
 RPAREN <- ")"
@@ -86,7 +88,7 @@ ListExpr <- _ LPAREN _ more:WhitespaceThenExpr* _ RPAREN {
     rv = append(rv, another.(types.Value))
   }
 
-  return sexpr.ListValue(rv), nil
+  return sexpr.WrapList(rv), nil
 }
 
 AnyOf <- _ "#any-of" LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
