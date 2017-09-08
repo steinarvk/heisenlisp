@@ -3,6 +3,7 @@ package types
 type Value interface {
 	String() string
 	Falsey() bool
+	TypeName() string
 	Uncertain() bool
 	Eval(e Env) (Value, error)
 }

@@ -16,8 +16,9 @@ func (b Bool) AtomEquals(other types.Atom) bool {
 	return ok && o == b
 }
 
-func (b Bool) Falsey() bool    { return !bool(b) }
-func (b Bool) Uncertain() bool { return false }
+func (b Bool) Falsey() bool     { return !bool(b) }
+func (b Bool) Uncertain() bool  { return false }
+func (_ Bool) TypeName() string { return "bool" }
 
 func (b Bool) String() string {
 	if bool(b) {
@@ -41,6 +42,7 @@ func (a AnyOf) String() string {
 func (a AnyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
 func (a AnyOf) Uncertain() bool                       { return false }
 func (a AnyOf) Falsey() bool                          { return false }
+func (_ AnyOf) TypeName() string                      { return "any-of" }
 
 type FullyUnknown struct{}
 
@@ -48,6 +50,7 @@ func (_ FullyUnknown) String() string                        { return "#unknown"
 func (f FullyUnknown) Eval(_ types.Env) (types.Value, error) { return f, nil }
 func (_ FullyUnknown) Falsey() bool                          { return false }
 func (_ FullyUnknown) Uncertain() bool                       { return true }
+func (_ FullyUnknown) TypeName() string                      { return "unknown" }
 
 // todo rename "symbol"
 type Identifier string
@@ -72,6 +75,8 @@ func (i Identifier) AtomEquals(other types.Atom) bool {
 	return ok && o == i
 }
 
+func (_ Identifier) TypeName() string { return "symbol" }
+
 type Integer int64
 
 func (i Integer) AtomEquals(other types.Atom) bool {
@@ -88,6 +93,8 @@ func (i Integer) Eval(_ types.Env) (types.Value, error) { return i, nil }
 func (i Integer) Falsey() bool    { return i == 0 }
 func (i Integer) Uncertain() bool { return false }
 
+func (_ Integer) TypeName() string { return "integer" }
+
 type String string
 
 func (s String) AtomEquals(other types.Atom) bool {
@@ -101,8 +108,9 @@ func (s String) String() string {
 
 func (s String) Eval(_ types.Env) (types.Value, error) { return s, nil }
 
-func (s String) Falsey() bool    { return s == "" }
-func (s String) Uncertain() bool { return false }
+func (s String) Falsey() bool     { return s == "" }
+func (s String) Uncertain() bool  { return false }
+func (_ String) TypeName() string { return "string" }
 
 type NilValue struct{}
 
@@ -110,6 +118,11 @@ func (_ NilValue) Falsey() bool                          { return true }
 func (_ NilValue) Uncertain() bool                       { return false }
 func (_ NilValue) String() string                        { return "#nil" }
 func (v NilValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
+func (v NilValue) AtomEquals(other types.Atom) bool {
+	_, ok := other.(NilValue)
+	return ok
+}
+func (_ NilValue) TypeName() string { return "nil" }
 
 func IsNil(v types.Value) bool {
 	_, ok := v.(NilValue)
@@ -139,7 +152,8 @@ func (c *ConsValue) asProperList() ([]types.Value, bool) {
 	}
 }
 
-func (c *ConsValue) Falsey() bool { return false }
+func (_ *ConsValue) TypeName() string { return "cons" }
+func (c *ConsValue) Falsey() bool     { return false }
 func (c *ConsValue) Uncertain() bool {
 	return c.Car.Uncertain() || c.Cdr.Uncertain()
 }
@@ -220,6 +234,7 @@ func NewBuiltinFunction(name string, f func([]types.Value) (types.Value, error))
 	return &BuiltinFunctionValue{name, f}
 }
 
+func (_ *BuiltinFunctionValue) TypeName() string { return "function" }
 func (f *BuiltinFunctionValue) Call(params []types.Value) (types.Value, error) {
 	return f.function(params)
 }
@@ -243,6 +258,7 @@ func NewLispFunction(env types.Env, name string, formalParams []string, body []t
 	return &LispFunctionValue{name, env, formalParams, body}
 }
 
+func (_ *LispFunctionValue) TypeName() string { return "function" }
 func (f *LispFunctionValue) errorprefix() string {
 	if f.name == "" {
 		return "(anonymous function): "
@@ -337,4 +353,8 @@ func Progn(e types.Env, vs []types.Value) (types.Value, error) {
 		}
 	}
 	return result, nil
+}
+
+func ToSymbol(s string) types.Value {
+	return Identifier(strings.ToLower(s))
 }

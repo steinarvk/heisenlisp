@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/env"
@@ -68,6 +69,7 @@ func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s)
 
 type ifSpecialForm struct{}
 
+func (i ifSpecialForm) TypeName() string                    { return "special" }
 func (i ifSpecialForm) String() string                      { return specialFormString("if") }
 func (i ifSpecialForm) Falsey() bool                        { return false }
 func (i ifSpecialForm) Uncertain() bool                     { return false }
@@ -96,6 +98,7 @@ func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 
 type setSpecialForm struct{}
 
+func (i setSpecialForm) TypeName() string                    { return "special" }
 func (i setSpecialForm) String() string                      { return specialFormString("set!") }
 func (i setSpecialForm) Falsey() bool                        { return false }
 func (i setSpecialForm) Uncertain() bool                     { return false }
@@ -122,6 +125,7 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 
 type quoteSpecialForm struct{}
 
+func (i quoteSpecialForm) TypeName() string                    { return "special" }
 func (i quoteSpecialForm) String() string                      { return specialFormString("quote") }
 func (i quoteSpecialForm) Falsey() bool                        { return false }
 func (i quoteSpecialForm) Uncertain() bool                     { return false }
@@ -135,6 +139,7 @@ func (i quoteSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 
 type defunSpecialForm struct{}
 
+func (i defunSpecialForm) TypeName() string                    { return "special" }
 func (i defunSpecialForm) String() string                      { return specialFormString("defun!") }
 func (i defunSpecialForm) Falsey() bool                        { return false }
 func (i defunSpecialForm) Uncertain() bool                     { return false }
@@ -161,6 +166,7 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 
 type letSpecialForm struct{}
 
+func (i letSpecialForm) TypeName() string                    { return "special" }
 func (i letSpecialForm) String() string                      { return specialFormString("let") }
 func (i letSpecialForm) Falsey() bool                        { return false }
 func (i letSpecialForm) Uncertain() bool                     { return false }
@@ -205,6 +211,7 @@ func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 
 type lambdaSpecialForm struct{}
 
+func (i lambdaSpecialForm) TypeName() string                    { return "special" }
 func (i lambdaSpecialForm) String() string                      { return specialFormString("lambda") }
 func (i lambdaSpecialForm) Falsey() bool                        { return false }
 func (i lambdaSpecialForm) Uncertain() bool                     { return false }
@@ -267,9 +274,34 @@ func BindDefaults(e types.Env) {
 		return expr.Bool(aok && bok && av.AtomEquals(bv)), nil
 	})
 
+	Unary(e, "_type", func(a types.Value) (types.Value, error) {
+		return expr.ToSymbol(a.TypeName()), nil
+	})
+
+	Binary(e, "cons", func(a, b types.Value) (types.Value, error) {
+		return &expr.ConsValue{a, b}, nil
+	})
+
+	Unary(e, "car", func(a types.Value) (types.Value, error) {
+		ca, ok := a.(*expr.ConsValue)
+		if !ok {
+			return nil, errors.New("not a cons")
+		}
+		return ca.Car, nil
+	})
+
+	Unary(e, "cdr", func(a types.Value) (types.Value, error) {
+		ca, ok := a.(*expr.ConsValue)
+		if !ok {
+			return nil, errors.New("not a cons")
+		}
+		return ca.Cdr, nil
+	})
+
 	// convenience bindings
 	e.Bind("true", expr.Bool(true))
 	e.Bind("false", expr.Bool(false))
+	e.Bind("nil", expr.NilValue{})
 
 	Unary(e, "not", func(a types.Value) (types.Value, error) {
 		if a.Uncertain() {
