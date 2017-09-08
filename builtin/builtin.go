@@ -6,6 +6,7 @@ import (
 
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
+	"github.com/steinarvk/heisenlisp/function"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -230,29 +231,12 @@ func (i lambdaSpecialForm) Execute(e types.Env, unevaluated []types.Value) (type
 }
 
 func makeFunction(namePtr *string, lexicalEnv types.Env, formalParamSpec types.Value, body []types.Value) (types.Value, error) {
-	formalParams, err := expr.UnwrapList(formalParamSpec)
-	if err != nil {
-		return nil, fmt.Errorf("params specifier must be list, not %v: %v", formalParamSpec, err)
-	}
-
-	var formalParamNames []string
-
-	for _, formalParam := range formalParams {
-		s, ok := formalParam.(expr.Identifier)
-		if !ok {
-			return nil, fmt.Errorf("formal param spec must be symbol, not %v", formalParam)
-		}
-		formalParamNames = append(formalParamNames, string(s))
-	}
-
 	name := ""
 	if namePtr != nil {
 		name = *namePtr
 	}
 
-	funcVal := expr.NewLispFunction(lexicalEnv, name, formalParamNames, body)
-
-	return funcVal, nil
+	return function.New(lexicalEnv, name, formalParamSpec, body)
 }
 
 func BindDefaults(e types.Env) {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -247,58 +246,6 @@ func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f
 func (f *BuiltinFunctionValue) Falsey() bool    { return false }
 func (f *BuiltinFunctionValue) Uncertain() bool { return false }
 
-type LispFunctionValue struct {
-	name         string
-	lexicalEnv   types.Env
-	formalParams []string
-	body         []types.Value
-}
-
-func NewLispFunction(env types.Env, name string, formalParams []string, body []types.Value) *LispFunctionValue {
-	return &LispFunctionValue{name, env, formalParams, body}
-}
-
-func (_ *LispFunctionValue) TypeName() string { return "function" }
-func (f *LispFunctionValue) errorprefix() string {
-	if f.name == "" {
-		return "(anonymous function): "
-	}
-	return fmt.Sprintf("%s: ", f.name)
-}
-
-func (f *LispFunctionValue) Call(params []types.Value) (types.Value, error) {
-	var rv types.Value
-	var err error
-
-	env := env.New(f.lexicalEnv)
-
-	if len(params) != len(f.formalParams) {
-		return nil, fmt.Errorf("%swant %d params, got %d", f.errorprefix(), len(f.formalParams), len(params))
-	}
-	for i, name := range f.formalParams {
-		env.Bind(name, params[i])
-	}
-
-	for _, stmt := range f.body {
-		rv, err = stmt.Eval(env)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return rv, nil
-}
-
-func (f *LispFunctionValue) String() string {
-	if f.name == "" {
-		return "#<anonymous function>"
-	}
-	return fmt.Sprintf("#<function %q>", f.name)
-}
-func (f *LispFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
-
-func (f *LispFunctionValue) Falsey() bool    { return false }
-func (f *LispFunctionValue) Uncertain() bool { return false }
-
 func SymbolName(v types.Value) (string, error) {
 	rv, ok := v.(Identifier)
 	if !ok {
@@ -338,6 +285,29 @@ func UnwrapList(v types.Value) ([]types.Value, error) {
 	}
 
 	return rrv, nil
+}
+
+func UnwrapFixedList(v types.Value, l int) ([]types.Value, error) {
+	xs, err := UnwrapList(v)
+	if err != nil {
+		return nil, err
+	}
+	if len(xs) != l {
+		suffix := "s"
+		if l == 1 {
+			suffix = ""
+		}
+		return nil, fmt.Errorf("unwrapping list: expected %d element%s got %d", l, suffix, len(xs))
+	}
+	return xs, nil
+}
+
+func UnwrapProperListPair(v types.Value) (types.Value, types.Value, error) {
+	xs, err := UnwrapFixedList(v, 2)
+	if err != nil {
+		return nil, nil, err
+	}
+	return xs[0], xs[1], nil
 }
 
 func Progn(e types.Env, vs []types.Value) (types.Value, error) {
