@@ -200,7 +200,7 @@ func (c *ConsValue) Eval(e types.Env) (types.Value, error) {
 
 	macro, ok := funcVal.(types.Macro)
 	if ok {
-		newForm, err := macro.Expand(e, unevaluatedParams)
+		newForm, err := macro.Expand(unevaluatedParams)
 		if err != nil {
 			return nil, err
 		}

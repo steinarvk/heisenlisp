@@ -20,7 +20,7 @@ type SpecialForm interface {
 
 type Macro interface {
 	Value
-	Expand(Env, []Value) (Value, error)
+	Expand([]Value) (Value, error)
 }
 
 type Callable interface {

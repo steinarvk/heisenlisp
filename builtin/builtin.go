@@ -165,6 +165,33 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 	return funcVal, nil
 }
 
+type defmacroSpecialForm struct{}
+
+func (i defmacroSpecialForm) TypeName() string                    { return "special" }
+func (i defmacroSpecialForm) String() string                      { return specialFormString("defmacro!") }
+func (i defmacroSpecialForm) Falsey() bool                        { return false }
+func (i defmacroSpecialForm) Uncertain() bool                     { return false }
+func (i defmacroSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i defmacroSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	if len(unevaluated) < 3 {
+		return nil, fmt.Errorf("defmacro!: too few arguments")
+	}
+
+	name, err := expr.SymbolName(unevaluated[0])
+	if err != nil {
+		return nil, fmt.Errorf("defmacro! name: %v", err)
+	}
+
+	macroValue, err := function.NewMacro(e, name, unevaluated[1], unevaluated[2:])
+	if err != nil {
+		return nil, err
+	}
+
+	e.Bind(name, macroValue)
+
+	return macroValue, nil
+}
+
 type letSpecialForm struct{}
 
 func (i letSpecialForm) TypeName() string                    { return "special" }
@@ -243,6 +270,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("if", &ifSpecialForm{})
 	e.Bind("set!", &setSpecialForm{})
 	e.Bind("defun!", &defunSpecialForm{})
+	e.Bind("defmacro!", &defmacroSpecialForm{})
 	e.Bind("lambda", &lambdaSpecialForm{})
 	e.Bind("quote", &quoteSpecialForm{})
 	e.Bind("let", &letSpecialForm{})

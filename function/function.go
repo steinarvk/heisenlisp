@@ -10,6 +10,20 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+type FunctionValue struct {
+	name       string
+	lexicalEnv types.Env
+	lambdaList *lambdaList
+	body       []types.Value
+}
+
+type MacroValue struct {
+	name       string
+	lexicalEnv types.Env
+	lambdaList *lambdaList
+	body       []types.Value
+}
+
 type namedValue struct {
 	name string
 	val  types.Value
@@ -70,13 +84,6 @@ func (l *lambdaList) bindArgs(e types.Env, params []types.Value) (types.Env, err
 	}
 
 	return e, nil
-}
-
-type FunctionValue struct {
-	name       string
-	lexicalEnv types.Env
-	lambdaList *lambdaList
-	body       []types.Value
 }
 
 func parseLambdaList(val types.Value) (*lambdaList, error) {
@@ -165,6 +172,14 @@ func New(env types.Env, name string, formalParams types.Value, body []types.Valu
 	return &FunctionValue{name, env, ll, body}, nil
 }
 
+func NewMacro(env types.Env, name string, formalParams types.Value, body []types.Value) (*MacroValue, error) {
+	ll, err := parseLambdaList(formalParams)
+	if err != nil {
+		return nil, fmt.Errorf("invalid lambda list: %v", err)
+	}
+	return &MacroValue{name, env, ll, body}, nil
+}
+
 func (_ *FunctionValue) TypeName() string { return "function" }
 func (f *FunctionValue) errorprefix() string {
 	if f.name == "" {
@@ -201,3 +216,40 @@ func (f *FunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
 func (f *FunctionValue) Falsey() bool    { return false }
 func (f *FunctionValue) Uncertain() bool { return false }
+
+func (_ *MacroValue) TypeName() string { return "macro" }
+func (f *MacroValue) errorprefix() string {
+	if f.name == "" {
+		return "(anonymous macro): "
+	}
+	return fmt.Sprintf("%s: ", f.name)
+}
+
+func (f *MacroValue) Expand(params []types.Value) (types.Value, error) {
+	var rv types.Value
+	var err error
+
+	env, err := f.lambdaList.bindArgs(f.lexicalEnv, params)
+	if err != nil {
+		return nil, fmt.Errorf("%s%v", f.errorprefix(), err)
+	}
+
+	for _, stmt := range f.body {
+		rv, err = stmt.Eval(env)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return rv, nil
+}
+
+func (f *MacroValue) String() string {
+	if f.name == "" {
+		return "#<anonymous macro>"
+	}
+	return fmt.Sprintf("#<macro %q>", f.name)
+}
+func (f *MacroValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
+
+func (f *MacroValue) Falsey() bool    { return false }
+func (f *MacroValue) Uncertain() bool { return false }

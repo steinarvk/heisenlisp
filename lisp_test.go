@@ -59,6 +59,17 @@ func TestExpressionsTruthy(t *testing.T) {
 		   (_atom-eq? 16 (f 8)))`,
 		`(let ((f (lambda (&optional (x 3) (y x)) (+ x y))))
 		   (_atom-eq? 17 (f 8 9)))`,
+		`(defmacro! and-two (a b)
+		   (let ((s (cons (quote if) (cons b (cons true (cons false nil))))))
+			   (cons (quote if) (cons a (cons s (cons false nil))))))`,
+		"(_atom-eq? true (and-two true true))",
+		"(_atom-eq? false (and-two false true))",
+		"(_atom-eq? false (and-two true false))",
+		"(_atom-eq? false (and-two false false))",
+		"(_atom-eq? true (and-two true (and-two true true)))",
+		"(_atom-eq? false (and-two true (and-two false true)))",
+		"(_atom-eq? false (and-two true (and-two true false)))",
+		"(_atom-eq? false (and-two false (and-two true true)))",
 	}
 
 	for i, s := range exprs {
