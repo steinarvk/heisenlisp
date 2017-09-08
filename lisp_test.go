@@ -53,6 +53,12 @@ func TestExpressionsTruthy(t *testing.T) {
 		"(_atom-eq? (_type \"kitten\") (quote string))",
 		"(_atom-eq? (_type nil) (quote nil))",
 		"(_atom-eq? (_type (cons 1 2)) (quote cons))",
+		`(let ((f (lambda (&optional (x 3) (y x)) (+ x y))))
+		   (_atom-eq? 6 (f)))`,
+		`(let ((f (lambda (&optional (x 3) (y x)) (+ x y))))
+		   (_atom-eq? 16 (f 8)))`,
+		`(let ((f (lambda (&optional (x 3) (y x)) (+ x y))))
+		   (_atom-eq? 17 (f 8 9)))`,
 	}
 
 	for i, s := range exprs {
