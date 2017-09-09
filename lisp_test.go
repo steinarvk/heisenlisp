@@ -70,6 +70,49 @@ func TestExpressionsTruthy(t *testing.T) {
 		"(_atom-eq? false (and-two true (and-two false true)))",
 		"(_atom-eq? false (and-two true (and-two true false)))",
 		"(_atom-eq? false (and-two false (and-two true true)))",
+		"(defun! list (&rest xs) xs)",
+		"(defun! cons? (x) (_atom-eq? (_type x) (quote cons)))",
+		"(defun! nil? (x) (_atom-eq? (_type x) (quote nil)))",
+		"(defun! second (x) (car (cdr x)))",
+		`(defmacro! my-cond (clause &rest more-clauses)
+		   (list 'if (car clause)
+						  	 (second clause)
+							 	 (if (nil? more-clauses)
+										 nil
+										 (cons 'my-cond more-clauses))))`,
+		`(_atom-eq? 42
+		   (my-cond (true 42)
+			          (true 43)
+								(true 44)))`,
+		`(_atom-eq? 43
+		   (my-cond ((_atom-eq? 2 3) 42)
+			          (true 43)
+								(true 44)))`,
+		`(_atom-eq? 42
+		   (my-cond ((_atom-eq? 2 2) 42)
+			          (true 43)
+								(true 44)))`,
+		`(defun! simply-equal? (a b)
+		  (my-cond
+			  ((and-two (_atom? a) (_atom? b))
+				 (_atom-eq? a b))
+			  ((and-two (cons? a) (cons? b))
+				 (and-two (simply-equal? (car a) (car b))
+				 				  (simply-equal? (cdr a) (cdr b))))))`,
+		`(simply-equal? (cons 1 2) (cons 1 2))`,
+		`(not (simply-equal? (cons 1 2) (cons 1 3)))`,
+		`(simply-equal? (cons 1 (cons 2 3)) (cons 1 (cons 2 3)))`,
+		`(not (simply-equal? (cons 1 (cons 4 3)) (cons 1 (cons 2 3))))`,
+		"(simply-equal? '(foo bar baz) '(FOO BAR BAZ))",
+		`(let ((mjau '(list 1 2 3)))
+       (simply-equal? (quasiquote (list 5 6 ,mjau))
+			                '(list 5 6 (list 1 2 3))))`,
+		`(let ((mjau '(list 1 2 3)))
+       (simply-equal? (quasiquote (list 5 6 ,@mjau))
+			                '(list 5 6 list 1 2 3)))`,
+		`(let ((mjau '(list 1 2 3)))
+       (simply-equal? ` + "`" + `(list 5 6 ,@mjau)
+			                '(list 5 6 list 1 2 3)))`,
 	}
 
 	for i, s := range exprs {

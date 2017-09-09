@@ -30,6 +30,7 @@ SingleExpr <- rv:Expr EOF {
 Expr <- (
     ListExpr
   / String
+  / QuotingExpr
   / Integer
   / Identifier
   / Bool
@@ -102,5 +103,27 @@ AnyOf <- _ "#any-of" LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
   return sexpr.AnyOf(rv), nil
 }
 
+QuotingExpr <- (
+    QuotedExpr
+  / QuasiQuotedExpr
+  / SplicingUnquotedExpr
+  / UnquotedExpr
+)
+
+QuotedExpr <- "'" _ rv:Expr {
+  return sexpr.WrapInUnary("quote", rv.(types.Value)), nil
+}
+
+QuasiQuotedExpr <- "`" _ rv:Expr {
+  return sexpr.WrapInUnary("quasiquote", rv.(types.Value)), nil
+}
+
+UnquotedExpr <- "," _ rv:Expr {
+  return sexpr.WrapInUnary("unquote", rv.(types.Value)), nil
+}
+
+SplicingUnquotedExpr <- ",@" _ rv:Expr {
+  return sexpr.WrapInUnary("unquote-splicing", rv.(types.Value)), nil
+}
 
 EOF <- !.

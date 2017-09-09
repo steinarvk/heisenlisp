@@ -1,7 +1,6 @@
 package builtin
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/env"
@@ -136,6 +135,20 @@ func (i quoteSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 		return nil, fmt.Errorf("quote: unary special form, got %d params", len(unevaluated))
 	}
 	return unevaluated[0], nil
+}
+
+type quasiquoteSpecialForm struct{}
+
+func (i quasiquoteSpecialForm) TypeName() string                    { return "special" }
+func (i quasiquoteSpecialForm) String() string                      { return specialFormString("quasiquote") }
+func (i quasiquoteSpecialForm) Falsey() bool                        { return false }
+func (i quasiquoteSpecialForm) Uncertain() bool                     { return false }
+func (i quasiquoteSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i quasiquoteSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	if len(unevaluated) != 1 {
+		return nil, fmt.Errorf("quasiquote: unary special form, got %d params", len(unevaluated))
+	}
+	return expr.ExpandQuasiQuote(e, unevaluated[0])
 }
 
 type defunSpecialForm struct{}
@@ -273,6 +286,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("defmacro!", &defmacroSpecialForm{})
 	e.Bind("lambda", &lambdaSpecialForm{})
 	e.Bind("quote", &quoteSpecialForm{})
+	e.Bind("quasiquote", &quasiquoteSpecialForm{})
 	e.Bind("let", &letSpecialForm{})
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
@@ -291,23 +305,15 @@ func BindDefaults(e types.Env) {
 	})
 
 	Binary(e, "cons", func(a, b types.Value) (types.Value, error) {
-		return &expr.ConsValue{a, b}, nil
+		return expr.Cons(a, b), nil
 	})
 
 	Unary(e, "car", func(a types.Value) (types.Value, error) {
-		ca, ok := a.(*expr.ConsValue)
-		if !ok {
-			return nil, errors.New("not a cons")
-		}
-		return ca.Car, nil
+		return expr.Car(a)
 	})
 
 	Unary(e, "cdr", func(a types.Value) (types.Value, error) {
-		ca, ok := a.(*expr.ConsValue)
-		if !ok {
-			return nil, errors.New("not a cons")
-		}
-		return ca.Cdr, nil
+		return expr.Cdr(a)
 	})
 
 	// convenience bindings

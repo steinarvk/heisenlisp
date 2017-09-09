@@ -129,8 +129,108 @@ func IsNil(v types.Value) bool {
 }
 
 type ConsValue struct {
-	Car types.Value
-	Cdr types.Value
+	car types.Value
+	cdr types.Value
+}
+
+func Cons(a, b types.Value) *ConsValue {
+	if a == nil {
+		a = NilValue{}
+	}
+	if b == nil {
+		b = NilValue{}
+	}
+	return &ConsValue{a, b}
+}
+
+func Car(v types.Value) (types.Value, error) {
+	rv, ok := v.(*ConsValue)
+	if !ok {
+		return nil, errors.New("not a cons")
+	}
+	return rv.car, nil
+}
+
+func Cdr(v types.Value) (types.Value, error) {
+	rv, ok := v.(*ConsValue)
+	if !ok {
+		return nil, errors.New("not a cons")
+	}
+	return rv.cdr, nil
+}
+
+func IsWrappedInUnary(name string, v types.Value) (types.Value, bool) {
+	c, ok := v.(*ConsValue)
+	if !ok {
+		return nil, false
+	}
+
+	c2, ok := c.cdr.(*ConsValue)
+	if !ok {
+		return nil, false
+	}
+	if !IsNil(c2.cdr) {
+		return nil, false
+	}
+
+	got, err := SymbolName(c.car)
+	if err != nil {
+		return nil, false
+	}
+
+	return c2.car, got == name
+}
+
+func ExpandQuasiQuote(e types.Env, mc types.Value) (types.Value, error) {
+	c, ok := mc.(*ConsValue)
+	if !ok {
+		return mc, nil
+	}
+
+	head := Cons(nil, nil)
+	tail := head
+
+	if w, ok := IsWrappedInUnary("unquote", c.car); ok {
+		newCar, err := w.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+		head.car = newCar
+	} else if w, ok := IsWrappedInUnary("unquote-splicing", c.car); ok {
+		listToBeSpliced, err := w.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+
+		elements, err := UnwrapList(listToBeSpliced)
+		if err != nil {
+			return nil, err
+		}
+
+		for i, elt := range elements {
+			if i == 0 {
+				head.car = elt
+				tail = head
+			} else {
+				tail.cdr = Cons(elt, nil)
+				tail = tail.cdr.(*ConsValue)
+			}
+		}
+	} else {
+		newCar, err := ExpandQuasiQuote(e, c.car)
+		if err != nil {
+			return nil, err
+		}
+		head.car = newCar
+	}
+
+	newCdr, err := ExpandQuasiQuote(e, c.cdr)
+	if err != nil {
+		return nil, err
+	}
+	tail.cdr = newCdr
+
+	return head, nil
 }
 
 func (c *ConsValue) asProperList() ([]types.Value, bool) {
@@ -138,12 +238,12 @@ func (c *ConsValue) asProperList() ([]types.Value, bool) {
 
 	node := c
 	for {
-		rv = append(rv, node.Car)
-		if IsNil(node.Cdr) {
+		rv = append(rv, node.car)
+		if IsNil(node.cdr) {
 			return rv, true
 		}
 
-		next, ok := node.Cdr.(*ConsValue)
+		next, ok := node.cdr.(*ConsValue)
 		if !ok {
 			return nil, false
 		}
@@ -154,19 +254,19 @@ func (c *ConsValue) asProperList() ([]types.Value, bool) {
 func (_ *ConsValue) TypeName() string { return "cons" }
 func (c *ConsValue) Falsey() bool     { return false }
 func (c *ConsValue) Uncertain() bool {
-	return c.Car.Uncertain() || c.Cdr.Uncertain()
+	return c.car.Uncertain() || c.cdr.Uncertain()
 }
 func (c *ConsValue) String() string {
 	xs := []string{}
 
 	node := c
 	for {
-		xs = append(xs, node.Car.String())
-		next, ok := node.Cdr.(*ConsValue)
+		xs = append(xs, node.car.String())
+		next, ok := node.cdr.(*ConsValue)
 		if !ok {
-			if !IsNil(node.Cdr) {
+			if !IsNil(node.cdr) {
 				xs = append(xs, ".")
-				xs = append(xs, node.Cdr.String())
+				xs = append(xs, node.cdr.String())
 			}
 			break
 		}
@@ -262,7 +362,7 @@ func WrapList(vs []types.Value) types.Value {
 			head = nc
 			tail = nc
 		} else {
-			tail.Cdr = nc
+			tail.cdr = nc
 			tail = nc
 		}
 	}
@@ -327,4 +427,8 @@ func Progn(e types.Env, vs []types.Value) (types.Value, error) {
 
 func ToSymbol(s string) types.Value {
 	return Identifier(strings.ToLower(s))
+}
+
+func WrapInUnary(name string, v types.Value) types.Value {
+	return Cons(ToSymbol(name), Cons(v, nil))
 }
