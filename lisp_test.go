@@ -18,15 +18,15 @@ func TestExpressionsTruthy(t *testing.T) {
 	exprs := []string{
 		"123",
 		"(+ 1 234)",
-		"#true",
+		"true",
 		`"hello"`,
-		"(if #true #true #false)",
-		"(if 42 #true #false)",
+		"(if true true false)",
+		"(if 42 true false)",
 		"(+ 1 0)",
 		"(- 0 -47)",
 		"(not 0)",
 		"(not false)",
-		"(not #false)",
+		"(not false)",
 		"(not (- 1 1))",
 		"(not (+ 42 -42))",
 		"(not (+ 42 (- 42)))",
@@ -127,6 +127,14 @@ func TestExpressionsTruthy(t *testing.T) {
 			                   (possible-values (any-of 1 2 3 4))))`,
 		`(simply-equal? (possible-values (any-of (any-of 1 2) 3))
 			              (possible-values (any-of 1 (any-of 2 3))))`,
+		`(_atom-eq? 2 (if 1 2 3))`,
+		`(_atom-eq? 3 (if 0 2 3))`,
+		`(simply-equal? (list 42 43)
+		                (possible-values (if (any-of true false) 42 43)))`,
+		`(not (_atom-eq? true (any-of true false)))`,
+		`(not (_atom-eq? false (any-of true false)))`,
+		`(_atom-eq? true (not (_atom-eq? true (any-of true false))))`,
+		`(simply-equal? (list 1 2) (possible-values (if (any-of true false) 1 2)))`,
 	}
 
 	for i, s := range exprs {

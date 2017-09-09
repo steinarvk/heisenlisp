@@ -34,18 +34,11 @@ Expr <- (
   / QuotingExpr
   / Integer
   / Identifier
-  / Bool
   / Unknown
-  / AnyOf
-  / Nil
 )
 
-Bool <- "#" ("true" / "false") {
-  return sexpr.Bool(string(c.text) == "#true"), nil
-}
 Unknown <- "#unknown" { return unknown.FullyUnknown{}, nil }
 
-Nil <- "#nil" { return sexpr.NilValue{}, nil }
 
 LPAREN <- "("
 RPAREN <- ")"
@@ -59,6 +52,7 @@ SingleCharEscape <- ["\\/bfnrt]
 UnicodeEscape <- 'u' HexDigit HexDigit HexDigit HexDigit
 HexDigit <- [0-9a-f]i
 
+// Keep initial regex in sync with lookahead in SpecialIdentifiers
 Identifier <- [a-zA-Z?!+/*.=_&-] [a-zA-Z0-9?!+/*.=&-]* {
   return sexpr.ToSymbol(string(c.text)), nil
 }
@@ -91,17 +85,6 @@ ListExpr <- _ LPAREN _ more:WhitespaceThenExpr* _ RPAREN {
   }
 
   return sexpr.WrapList(rv), nil
-}
-
-AnyOf <- _ "#any-of" LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
-  var rv []types.Value
-
-  rv = append(rv, first.(types.Value))
-  for _, another := range more.([]interface{}) {
-    rv = append(rv, another.(types.Value))
-  }
-
-  return unknown.NewAnyOf(rv), nil
 }
 
 QuotingExpr <- (

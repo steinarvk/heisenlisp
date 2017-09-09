@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/env"
@@ -91,14 +92,32 @@ func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 	if err != nil {
 		return nil, err
 	}
-	if condition.Uncertain() {
-		return nil, fmt.Errorf("branching on uncertain value: %v", condition)
+
+	tv, err := unknown.TruthValue(condition)
+	if err != nil {
+		return nil, err
 	}
 
-	if condition.Falsey() {
+	switch tv {
+	case unknown.Maybe:
+		thenVal, err := thenClause.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+		elseVal, err := elseClause.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+
+		return unknown.NewMaybeAnyOf([]types.Value{
+			thenVal, elseVal,
+		}), nil
+	case unknown.True:
+		return thenClause.Eval(e)
+	case unknown.False:
 		return elseClause.Eval(e)
 	}
-	return thenClause.Eval(e)
+	return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
 }
 
 type setSpecialForm struct{}
@@ -294,6 +313,10 @@ func BindDefaults(e types.Env) {
 	e.Bind("quasiquote", &quasiquoteSpecialForm{})
 	e.Bind("let", &letSpecialForm{})
 
+	e.Bind("nil", expr.NilValue{})
+	e.Bind("true", expr.Bool(true))
+	e.Bind("false", expr.Bool(false))
+
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)
 		return expr.Bool(ok), nil
@@ -319,17 +342,22 @@ func BindDefaults(e types.Env) {
 		return expr.Cdr(a)
 	})
 
-	// convenience bindings
-	e.Bind("true", expr.Bool(true))
-	e.Bind("false", expr.Bool(false))
-	e.Bind("nil", expr.NilValue{})
-
 	Unary(e, "not", func(a types.Value) (types.Value, error) {
-		if a.Uncertain() {
-			return nil, fmt.Errorf("TODO: negating uncertain values not yet implemented")
+		val, err := unknown.TruthValue(a)
+		if err != nil {
+			return nil, err
 		}
-
-		return expr.Bool(a.Falsey()), nil
+		switch val {
+		case unknown.False:
+			return expr.Bool(true), nil
+		case unknown.True:
+			return expr.Bool(false), nil
+		case unknown.Maybe:
+			return unknown.NewMaybeAnyOf([]types.Value{
+				expr.Bool(true), expr.Bool(false),
+			}), nil
+		}
+		return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
 	})
 
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {

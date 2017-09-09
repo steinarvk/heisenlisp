@@ -21,9 +21,9 @@ func (_ Bool) TypeName() string { return "bool" }
 
 func (b Bool) String() string {
 	if bool(b) {
-		return "#true"
+		return "true"
 	}
-	return "#false"
+	return "false"
 }
 
 func (b Bool) Eval(_ types.Env) (types.Value, error) { return b, nil }
@@ -92,7 +92,7 @@ type NilValue struct{}
 
 func (_ NilValue) Falsey() bool                          { return true }
 func (_ NilValue) Uncertain() bool                       { return false }
-func (_ NilValue) String() string                        { return "#nil" }
+func (_ NilValue) String() string                        { return "nil" }
 func (v NilValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
 func (v NilValue) AtomEquals(other types.Atom) bool {
 	_, ok := other.(NilValue)
