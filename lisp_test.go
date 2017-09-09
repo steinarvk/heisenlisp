@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/steinarvk/heisenlisp/builtin"
@@ -113,9 +114,23 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(let ((mjau '(list 1 2 3)))
        (simply-equal? ` + "`" + `(list 5 6 ,@mjau)
 			                '(list 5 6 list 1 2 3)))`,
+		`(simply-equal? (list 1 2 3) (possible-values (any-of 1 2 3)))`,
+		`(nil? nil)`,
+		`(not (if true nil 42))`,
+		`(not (if false 42 nil))`,
+		`(not (my-cond (false 95)))`,
+		`(not (my-cond (false 38) (false 95)))`,
+		`(not (simply-equal? (cons 1 nil) nil))`,
+		`(simply-equal? (possible-values (any-of 1 2 3))
+			              (possible-values (any-of 1 2 3)))`,
+		`(not (simply-equal? (possible-values (any-of 1 2 3))
+			                   (possible-values (any-of 1 2 3 4))))`,
+		`(simply-equal? (possible-values (any-of (any-of 1 2) 3))
+			              (possible-values (any-of 1 (any-of 2 3))))`,
 	}
 
 	for i, s := range exprs {
+		log.Printf("testcase %d: %s", i, s)
 		rv, err := parser.Parse(fmt.Sprintf("<testcase %d>", i), []byte(s))
 		if err != nil {
 			t.Errorf("error parsing #%d %q: %v", i, s, err)

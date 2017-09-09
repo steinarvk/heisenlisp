@@ -28,29 +28,6 @@ func (b Bool) String() string {
 
 func (b Bool) Eval(_ types.Env) (types.Value, error) { return b, nil }
 
-type AnyOf []types.Value
-
-func (a AnyOf) String() string {
-	var xs []string
-	for _, x := range a {
-		xs = append(xs, x.String())
-	}
-	return fmt.Sprintf("#any-of(%s)", strings.Join(xs, " "))
-}
-
-func (a AnyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
-func (a AnyOf) Uncertain() bool                       { return false }
-func (a AnyOf) Falsey() bool                          { return false }
-func (_ AnyOf) TypeName() string                      { return "any-of" }
-
-type FullyUnknown struct{}
-
-func (_ FullyUnknown) String() string                        { return "#unknown" }
-func (f FullyUnknown) Eval(_ types.Env) (types.Value, error) { return f, nil }
-func (_ FullyUnknown) Falsey() bool                          { return false }
-func (_ FullyUnknown) Uncertain() bool                       { return true }
-func (_ FullyUnknown) TypeName() string                      { return "unknown" }
-
 // todo rename "symbol"
 type Identifier string
 
@@ -355,6 +332,9 @@ func SymbolName(v types.Value) (string, error) {
 }
 
 func WrapList(vs []types.Value) types.Value {
+	if len(vs) == 0 {
+		return NilValue{}
+	}
 	var head, tail *ConsValue
 	for _, v := range vs {
 		nc := &ConsValue{v, NilValue{}}
@@ -431,4 +411,10 @@ func ToSymbol(s string) types.Value {
 
 func WrapInUnary(name string, v types.Value) types.Value {
 	return Cons(ToSymbol(name), Cons(v, nil))
+}
+
+func AtomEquals(a, b types.Value) bool {
+	av, aok := a.(types.Atom)
+	bv, bok := b.(types.Atom)
+	return aok && bok && av.AtomEquals(bv)
 }

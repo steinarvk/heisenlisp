@@ -14,6 +14,7 @@
     "unicode/utf8"
 
   	"github.com/steinarvk/heisenlisp/types"
+    "github.com/steinarvk/heisenlisp/unknown"
   
     sexpr "github.com/steinarvk/heisenlisp/expr"
   )
@@ -42,7 +43,7 @@ Expr <- (
 Bool <- "#" ("true" / "false") {
   return sexpr.Bool(string(c.text) == "#true"), nil
 }
-Unknown <- "#unknown" { return sexpr.FullyUnknown{}, nil }
+Unknown <- "#unknown" { return unknown.FullyUnknown{}, nil }
 
 Nil <- "#nil" { return sexpr.NilValue{}, nil }
 
@@ -100,7 +101,7 @@ AnyOf <- _ "#any-of" LPAREN _ first:Expr more:WhitespaceThenExpr* _ RPAREN {
     rv = append(rv, another.(types.Value))
   }
 
-  return sexpr.AnyOf(rv), nil
+  return unknown.NewAnyOf(rv), nil
 }
 
 QuotingExpr <- (

@@ -7,6 +7,7 @@ import (
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/function"
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/unknown"
 )
 
 func wrap(name string, f func(a []types.Value) (types.Value, error)) func([]types.Value) (types.Value, error) {
@@ -48,6 +49,10 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 		return f(vs[0], vs[1])
 	}
 	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
+}
+
+func Values(e types.Env, name string, f func(xs []types.Value) (types.Value, error)) {
+	e.Bind(name, expr.NewBuiltinFunction(name, f))
 }
 
 func Integers(e types.Env, name string, f func([]expr.Integer) (types.Value, error)) {
@@ -295,9 +300,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Binary(e, "_atom-eq?", func(a, b types.Value) (types.Value, error) {
-		av, aok := a.(types.Atom)
-		bv, bok := b.(types.Atom)
-		return expr.Bool(aok && bok && av.AtomEquals(bv)), nil
+		return expr.Bool(expr.AtomEquals(a, b)), nil
 	})
 
 	Unary(e, "_type", func(a types.Value) (types.Value, error) {
@@ -327,6 +330,18 @@ func BindDefaults(e types.Env) {
 		}
 
 		return expr.Bool(a.Falsey()), nil
+	})
+
+	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
+		return unknown.NewMaybeAnyOf(xs), nil
+	})
+
+	Unary(e, "possible-values", func(v types.Value) (types.Value, error) {
+		vals, ok := unknown.PossibleValues(v)
+		if ok {
+			return expr.WrapList(vals), nil
+		}
+		return unknown.FullyUnknown{}, nil
 	})
 
 	Integers(e, "+", func(xs []expr.Integer) (types.Value, error) {
