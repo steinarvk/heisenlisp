@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	maxAnyOfElements = 20
+	maxAnyOfElements = 100
 )
 
 type FullyUnknown struct{}
@@ -85,6 +85,11 @@ func NewAnyOf(xs []types.Value) types.Value {
 func NewMaybeAnyOf(xs []types.Value) types.Value {
 	rv := NewAnyOf(xs).(anyOf)
 	if len(rv.possibleValues()) > maxAnyOfElements {
+		// past a certain limit we start discarding information to not allow the
+		// work associated with keeping track of uncertainty to grow without bound.
+		// note that returning a FullyUnknown is the last resort; other options
+		// would be returning something with constrained type or value, e.g.
+		// a numerically constrained value.
 		return FullyUnknown{}
 	}
 	return rv
