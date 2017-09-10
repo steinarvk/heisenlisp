@@ -274,6 +274,84 @@ func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 	return expr.Progn(childEnv, unevaluated[1:])
 }
 
+type andSpecialForm struct{}
+
+func (i andSpecialForm) TypeName() string                    { return "special" }
+func (i andSpecialForm) String() string                      { return specialFormString("and") }
+func (i andSpecialForm) Falsey() bool                        { return false }
+func (i andSpecialForm) Uncertain() bool                     { return false }
+func (i andSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i andSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	knownToMaybeBeFalse := false
+
+	for _, uneval := range unevaluated {
+		eval, err := uneval.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+		truth, err := unknown.TruthValue(eval)
+		if err != nil {
+			return nil, err
+		}
+		switch truth {
+		case unknown.True:
+			break
+		case unknown.False:
+			return expr.Bool(false), nil
+		default:
+			knownToMaybeBeFalse = true
+		}
+	}
+
+	if knownToMaybeBeFalse {
+		return unknown.NewMaybeAnyOf([]types.Value{
+			expr.Bool(true),
+			expr.Bool(false),
+		}), nil
+	}
+
+	return expr.Bool(true), nil
+}
+
+type orSpecialForm struct{}
+
+func (i orSpecialForm) TypeName() string                    { return "special" }
+func (i orSpecialForm) String() string                      { return specialFormString("or") }
+func (i orSpecialForm) Falsey() bool                        { return false }
+func (i orSpecialForm) Uncertain() bool                     { return false }
+func (i orSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	knownToMaybeBeTrue := false
+
+	for _, uneval := range unevaluated {
+		eval, err := uneval.Eval(e)
+		if err != nil {
+			return nil, err
+		}
+		truth, err := unknown.TruthValue(eval)
+		if err != nil {
+			return nil, err
+		}
+		switch truth {
+		case unknown.True:
+			return expr.Bool(true), nil
+		case unknown.False:
+			break
+		default:
+			knownToMaybeBeTrue = true
+		}
+	}
+
+	if knownToMaybeBeTrue {
+		return unknown.NewMaybeAnyOf([]types.Value{
+			expr.Bool(true),
+			expr.Bool(false),
+		}), nil
+	}
+
+	return expr.Bool(false), nil
+}
+
 type lambdaSpecialForm struct{}
 
 func (i lambdaSpecialForm) TypeName() string                    { return "special" }
@@ -330,6 +408,10 @@ func BindDefaults(e types.Env) {
 		return expr.ToSymbol(a.TypeName()), nil
 	})
 
+	Unary(e, "_unknown?", func(a types.Value) (types.Value, error) {
+		return expr.Bool(a.Uncertain()), nil
+	})
+
 	Binary(e, "cons", func(a, b types.Value) (types.Value, error) {
 		return expr.Cons(a, b), nil
 	})
@@ -372,6 +454,8 @@ func BindDefaults(e types.Env) {
 		return unknown.FullyUnknown{}, nil
 	})
 
+	// todo: the arithmetic functions need to be made unknown-aware.
+
 	Integers(e, "+", func(xs []expr.Integer) (types.Value, error) {
 		var rv int64
 		for _, x := range xs {
@@ -401,6 +485,16 @@ func BindDefaults(e types.Env) {
 			rv *= int64(x)
 		}
 		return expr.Integer(rv), nil
+	})
+
+	Integers(e, "mod", func(xs []expr.Integer) (types.Value, error) {
+		if len(xs) != 2 {
+			return nil, fmt.Errorf("mod: got %d params want 2", len(xs))
+		}
+		if xs[1] == 0 {
+			return nil, errors.New("division by zero")
+		}
+		return expr.Integer(int64(xs[0]) % int64(xs[1])), nil
 	})
 
 	Integers(e, "=", func(xs []expr.Integer) (types.Value, error) {
