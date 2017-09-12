@@ -1,0 +1,6 @@
+(expect! "42" 42)
+(expect! "\"Hello world\"" "Hello world")
+(expect! "true" true)
+(expect! "false" false)
+
+(expect! "120" (* 2 3 4 5))
