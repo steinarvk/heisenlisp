@@ -1,0 +1,13 @@
+(defun! my-even? (n)
+  (= 0 (mod n 2)))
+
+(defun! my-odd? (n)
+  (not (my-even? n)))
+
+(expect! "true" (my-odd? 5))
+(expect! "false" (my-even? 5))
+(expect! "false" (my-odd? 6))
+(expect! "true" (my-even? 6))
+
+(expect! "maybe" (my-even? (any-of 5 6)))
+(expect! "true" (my-even? (any-of 6 8)))
