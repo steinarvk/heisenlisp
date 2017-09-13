@@ -20,11 +20,11 @@
   )
 }
 
-MultiExpr <- rv:WhitespaceThenExpr+ EOF {
+MultiExpr <- rv:WhitespaceThenExpr+ _ EOF {
   return rv, nil
 }
 
-SingleExpr <- rv:Expr EOF {
+SingleExpr <- rv:Expr _ EOF {
   return rv, nil
 }
 

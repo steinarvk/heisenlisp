@@ -1,0 +1,4 @@
+(defun! factorial (n)
+  (if n (* n (factorial (- n 1))) 1))
+
+(factorial 5)

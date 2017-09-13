@@ -510,3 +510,9 @@ func BindDefaults(e types.Env) {
 		return expr.Bool(true), nil
 	})
 }
+
+func NewRootEnv() types.Env {
+	rv := env.New(nil)
+	BindDefaults(rv)
+	return rv
+}

@@ -1,15 +1,13 @@
 package env
 
-import (
-	"github.com/steinarvk/heisenlisp/types"
-)
+import "github.com/steinarvk/heisenlisp/types"
 
 type env struct {
 	parent   types.Env
 	bindings map[string]types.Value
 }
 
-func New(parent types.Env) *env {
+func New(parent types.Env) types.Env {
 	return &env{
 		parent:   parent,
 		bindings: map[string]types.Value{},
