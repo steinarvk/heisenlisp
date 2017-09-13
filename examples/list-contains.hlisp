@@ -1,6 +1,13 @@
 (set! list-one (list 1 2 3 4 5 6 7 8 9 10))
 (set! list-two (list 1 2 3 4 5 (any-of 6 11) 7 8 9 10))
 
+;; Note: This pattern of processing a list recursively might be
+;;       infeasible, once we get into elements meant to represent
+;;       lists of unknown length. (Come to think of it; how should
+;;       this function work for (my-contains? 42 unknown)?
+;;       The right answer would be "maybe", but can we make that
+;;       computable with this pattern, given that (empty? unknown)
+;;       is also maybe?
 (defun! my-contains? (element xs)
   (if (empty? xs)
       false
