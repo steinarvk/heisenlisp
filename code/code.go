@@ -2,6 +2,7 @@ package code
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	"github.com/steinarvk/heisenlisp/gen/parser"
 	"github.com/steinarvk/heisenlisp/types"
@@ -27,4 +28,13 @@ func Run(env types.Env, name string, code []byte) (types.Value, error) {
 	}
 
 	return lastResult, nil
+}
+
+func RunFile(env types.Env, filename string) (types.Value, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	return Run(env, filename, data)
 }

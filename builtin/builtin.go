@@ -3,13 +3,21 @@ package builtin
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path/filepath"
+	"sort"
 
+	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/function"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
+)
+
+var (
+	Verbose = false
 )
 
 func wrap(name string, f func(a []types.Value) (types.Value, error)) func([]types.Value) (types.Value, error) {
@@ -418,11 +426,15 @@ func BindDefaults(e types.Env) {
 
 		success := s == srep
 		if success {
-			log.Printf("PASS: %q == %q", s, srep)
+			if Verbose {
+				log.Printf("PASS: %q == %q", s, srep)
+			}
 			return expr.TrueValue, nil
 		}
 
-		log.Printf("FAIL: %q != %q", s, srep)
+		if Verbose {
+			log.Printf("FAIL: %q != %q", s, srep)
+		}
 		return nil, fmt.Errorf("assertion failed: %q != %q", s, srep)
 	})
 
@@ -527,8 +539,52 @@ func BindDefaults(e types.Env) {
 	})
 }
 
+func listFilesInOrder(dirname string) ([]string, error) {
+	infos, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+
+	var rv []string
+	for _, info := range infos {
+		rv = append(rv, filepath.Join(dirname, info.Name()))
+	}
+	sort.Strings(rv)
+	return rv, nil
+}
+
+func loadFile(e types.Env, fn string) error {
+	_, err := code.RunFile(e, fn)
+	return err
+}
+
+func loadStandardLibrary(e types.Env) error {
+	// TODO: for compiled binaries, embed standard library
+
+	fns, err := listFilesInOrder("./core")
+	if err != nil {
+		return err
+	}
+	if Verbose {
+		log.Printf("standard library: %v", fns)
+	}
+
+	for _, fn := range fns {
+		if Verbose {
+			log.Printf("loading %q", fn)
+		}
+		if err := loadFile(e, fn); err != nil {
+			return fmt.Errorf("error loading %q: %v", fn, err)
+		}
+	}
+	return nil
+}
+
 func NewRootEnv() types.Env {
 	rv := env.New(nil)
 	BindDefaults(rv)
+	if err := loadStandardLibrary(rv); err != nil {
+		panic(fmt.Errorf("error loading standard library: %v", err))
+	}
 	return rv
 }

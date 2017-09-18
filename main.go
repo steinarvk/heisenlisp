@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	script = flag.String("script", "", "execute script in filename instead of stdin")
+	script  = flag.String("script", "", "execute script in filename instead of stdin")
+	verbose = flag.Bool("verbose", false, "increase verbosity level")
 )
 
 func mainCoreExecuteScript(filename string) error {
@@ -87,6 +88,10 @@ func mainCoreREPL() error {
 
 func main() {
 	flag.Parse()
+
+	if *verbose {
+		builtin.Verbose = true
+	}
 
 	if *script != "" {
 		if err := mainCoreExecuteScript(*script); err != nil {

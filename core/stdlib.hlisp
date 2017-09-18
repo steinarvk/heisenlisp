@@ -1,0 +1,17 @@
+(defun! list (&rest xs) xs)
+
+(defun! nil? (x) (_atom-eq? nil x))
+
+(defun! first (xs) (car xs))
+(defun! second (xs) (car (cdr xs)))
+(defun! third (xs) (car (cdr (cdr xs))))
+
+(defun! _dumb-equals? (a b)
+  (_atom-eq? (_to-string a) (_to-string b)))
+
+(defmacro! cond (clause &rest more-clauses)
+  `(if ,(first clause)
+       ,(second clause)
+       ,(if (nil? more-clauses)
+            nil
+            (cons 'cond more-clauses))))
