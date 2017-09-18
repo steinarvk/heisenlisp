@@ -13,6 +13,7 @@ import (
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/function"
+	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
 )
@@ -588,38 +589,9 @@ func BindDefaults(e types.Env) {
 		return expr.WrapList(xs), nil
 	})
 
-	// todo: the arithmetic functions need to be made unknown-aware.
-
-	Integers(e, "+", func(xs []expr.Integer) (types.Value, error) {
-		var rv int64
-		for _, x := range xs {
-			rv += int64(x)
-		}
-		return expr.Integer(rv), nil
-	})
-
-	Integers(e, "-", func(xs []expr.Integer) (types.Value, error) {
-		switch {
-		case len(xs) == 0:
-			return expr.Integer(0), nil
-		case len(xs) == 1:
-			return expr.Integer(-xs[0]), nil
-		default:
-			rv := int64(xs[0])
-			for _, x := range xs[1:] {
-				rv -= int64(x)
-			}
-			return expr.Integer(rv), nil
-		}
-	})
-
-	Integers(e, "*", func(xs []expr.Integer) (types.Value, error) {
-		rv := int64(1)
-		for _, x := range xs {
-			rv *= int64(x)
-		}
-		return expr.Integer(rv), nil
-	})
+	Binary(e, "low-level-plus", numerics.BinaryPlus)
+	Binary(e, "low-level-minus", numerics.BinaryMinus)
+	Binary(e, "low-level-multiply", numerics.BinaryMultiply)
 
 	Integers(e, "mod", func(xs []expr.Integer) (types.Value, error) {
 		if len(xs) != 2 {

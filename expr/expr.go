@@ -76,6 +76,9 @@ func (i Integer) Uncertain() bool { return false }
 
 func (_ Integer) TypeName() string { return "integer" }
 
+func (i Integer) AsInt64() (int64, bool)    { return int64(i), true }
+func (i Integer) AsDouble() (float64, bool) { return float64(i), true }
+
 type String string
 
 func (s String) AtomEquals(other types.Atom) bool {

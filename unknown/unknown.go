@@ -21,6 +21,11 @@ func (_ FullyUnknown) Falsey() bool                          { return false }
 func (_ FullyUnknown) Uncertain() bool                       { return true }
 func (_ FullyUnknown) TypeName() string                      { return "unknown" }
 
+func IsFullyUnknown(v types.Value) bool {
+	_, ok := v.(FullyUnknown)
+	return ok
+}
+
 type anyOf struct {
 	vals []types.Value
 }
@@ -119,6 +124,12 @@ func NewMaybeAnyOfOrPanic(xs []types.Value) types.Value {
 func NewMaybeAnyOf(xs []types.Value) (types.Value, error) {
 	if len(xs) == 0 {
 		return nil, errors.New("no options for any-of")
+	}
+
+	for _, x := range xs {
+		if IsFullyUnknown(x) {
+			return FullyUnknown{}, nil
+		}
 	}
 
 	if len(xs) == 1 {

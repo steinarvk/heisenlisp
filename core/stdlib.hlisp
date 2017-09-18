@@ -1,5 +1,15 @@
 (defun! list (&rest xs) xs)
 
+(defun! + (&rest xs) (reduce-left low-level-plus 0 xs))
+(defun! * (&rest xs) (reduce-left low-level-multiply 1 xs))
+
+(defun! negate (x) (* -1 x))
+
+(defun! - (&rest xs)
+  (if (_atom-eq? 1 (length xs))
+      (negate (first xs))
+      (reduce-left low-level-minus 0 xs)))
+
 (defun! empty? (xs) (nil? xs))
 
 (defun! zero? (n) (_atom-eq? 0 n))
