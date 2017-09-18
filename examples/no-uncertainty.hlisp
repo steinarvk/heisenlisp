@@ -1,6 +1,6 @@
-(expect! "42" 42)
-(expect! "\"Hello world\"" "Hello world")
-(expect! "true" true)
-(expect! "false" false)
+(_assert! "42" 42)
+(_assert! "\"Hello world\"" "Hello world")
+(_assert! "true" true)
+(_assert! "false" false)
 
-(expect! "120" (* 2 3 4 5))
+(_assert! "120" (* 2 3 4 5))

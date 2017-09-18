@@ -23,15 +23,15 @@
 
 (defun! equal-to (y) (lambda (x) (= x y)))
 
-(expect! "true" (my-contains? 6 list-one))
-(expect! "false" (my-contains? 60 list-one))
+(_assert! "true" (my-contains? 6 list-one))
+(_assert! "false" (my-contains? 60 list-one))
 
-(expect! "true" (my-contains? 5 list-two))
-(expect! "false" (my-contains? 12 list-two))
-(expect! "maybe" (my-contains? 11 list-two))
-(expect! "maybe" (my-contains? 6 list-two))
+(_assert! "true" (my-contains? 5 list-two))
+(_assert! "false" (my-contains? 12 list-two))
+(_assert! "maybe" (my-contains? 11 list-two))
+(_assert! "maybe" (my-contains? 6 list-two))
 
-(expect! "0" (my-count-if (equal-to 42) list-one))
-(expect! "1" (my-count-if (equal-to 7) list-one))
-(expect! "maybe" (= 1 (my-count-if (equal-to 6) list-two)))
-(expect! "false" (> (my-count-if (equal-to 6) list-two) 1))
+(_assert! "0" (my-count-if (equal-to 42) list-one))
+(_assert! "1" (my-count-if (equal-to 7) list-one))
+(_assert! "maybe" (= 1 (my-count-if (equal-to 6) list-two)))
+(_assert! "false" (> (my-count-if (equal-to 6) list-two) 1))

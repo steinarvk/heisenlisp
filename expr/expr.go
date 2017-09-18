@@ -328,6 +328,14 @@ func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f
 func (f *BuiltinFunctionValue) Falsey() bool    { return false }
 func (f *BuiltinFunctionValue) Uncertain() bool { return false }
 
+func StringValue(v types.Value) (string, error) {
+	rv, ok := v.(String)
+	if !ok {
+		return "", errors.New("not a string")
+	}
+	return string(rv), nil
+}
+
 func SymbolName(v types.Value) (string, error) {
 	rv, ok := v.(Identifier)
 	if !ok {

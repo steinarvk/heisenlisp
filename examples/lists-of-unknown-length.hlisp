@@ -3,29 +3,29 @@
 (set! cons-structure-with-unknown-tail (cons 1 (cons 2 (cons 3 unknown))))
 (set! one-of-two-lists (cons 1 (cons 2 (cons 3 (any-of (cons 4 nil) nil)))))
 
-(expect! "3" (length normal-list))
-(expect! "3" (length list-with-unknown))
+(_assert! "3" (length normal-list))
+(_assert! "3" (length list-with-unknown))
 
-(expect! "#any-of(3 4)" (length list-with-unknown))
+(_assert! "#any-of(3 4)" (length list-with-unknown))
 
-(expect! "true" (list? normal-list))
-(expect! "true" (list? list-with-unknown))
-(expect! "true" (list? one-of-two-lists))
-(expect! "maybe" (list? cons-structure-with-unknown-tail))
+(_assert! "true" (list? normal-list))
+(_assert! "true" (list? list-with-unknown))
+(_assert! "true" (list? one-of-two-lists))
+(_assert! "maybe" (list? cons-structure-with-unknown-tail))
 
 (defun! is-equal-to (n) (lambda (x) (= x n)))
 
-(expect! "true" (any? (is-equal-to 2) normal-list))
-(expect! "false" (any? (is-equal-to 4) normal-list))
+(_assert! "true" (any? (is-equal-to 2) normal-list))
+(_assert! "false" (any? (is-equal-to 4) normal-list))
 
-(expect! "maybe" (any? (is-equal-to 2) list-with-unknown))
-(expect! "true" (any? (is-equal-to 3) list-with-unknown))
+(_assert! "maybe" (any? (is-equal-to 2) list-with-unknown))
+(_assert! "true" (any? (is-equal-to 3) list-with-unknown))
 
-(expect! "true" (any? (is-equal-to 2) one-of-two-lists))
-(expect! "maybe" (any? (is-equal-to 4) one-of-two-lists))
-(expect! "false" (any? (is-equal-to 5) one-of-two-lists))
+(_assert! "true" (any? (is-equal-to 2) one-of-two-lists))
+(_assert! "maybe" (any? (is-equal-to 4) one-of-two-lists))
+(_assert! "false" (any? (is-equal-to 5) one-of-two-lists))
 
 ;; Slightly unclear what these should be; since the function
 ;; calls might have resulted in errors.
-(expect! "unknown" (length cons-structure-with-unknown-tail))
-(expect! "maybe" (any? (is-equal-to 2) list-with-unknown))
+(_assert! "unknown" (length cons-structure-with-unknown-tail))
+(_assert! "maybe" (any? (is-equal-to 2) list-with-unknown))

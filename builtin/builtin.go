@@ -3,6 +3,7 @@ package builtin
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
@@ -405,6 +406,24 @@ func BindDefaults(e types.Env) {
 
 	Unary(e, "_to-string", func(a types.Value) (types.Value, error) {
 		return expr.String(a.String()), nil
+	})
+
+	Binary(e, "_assert!", func(sval, anyval types.Value) (types.Value, error) {
+		s, err := expr.StringValue(sval)
+		if err != nil {
+			return nil, err
+		}
+
+		srep := anyval.String()
+
+		success := s == srep
+		if success {
+			log.Printf("PASS: %q == %q", s, srep)
+			return expr.TrueValue, nil
+		}
+
+		log.Printf("FAIL: %q != %q", s, srep)
+		return nil, fmt.Errorf("assertion failed: %q != %q", s, srep)
 	})
 
 	Unary(e, "_unknown?", func(a types.Value) (types.Value, error) {
