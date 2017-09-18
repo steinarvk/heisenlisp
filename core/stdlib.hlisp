@@ -1,5 +1,7 @@
 (defun! list (&rest xs) xs)
 
+(defun! empty? (xs) (nil? xs))
+
 (defun! zero? (n) (_atom-eq? 0 n))
 
 (defun! nil? (x) (_atom-eq? nil x))

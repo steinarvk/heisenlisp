@@ -141,6 +141,8 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_atom-eq? "(0 1 2 3 4 5)" (_to-string (range 6)))`,
 		`(_atom-eq? "(1 2 3 4 5 6)" (_to-string (map inc (range 6))))`,
 		`(_atom-eq? "(-1 0 1 2 3 4)" (_to-string (map dec (range 6))))`,
+		`(_atom-eq? "1" (_to-string (reduce-left * 1 nil)))`,
+		`(_atom-eq? "120" (_to-string (reduce-left * 1 (map inc (range 5)))))`,
 	}
 
 	for i, s := range exprs {

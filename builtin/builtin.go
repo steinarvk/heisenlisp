@@ -62,6 +62,16 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
 }
 
+func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value, error)) {
+	checker := func(vs []types.Value) (types.Value, error) {
+		if len(vs) != 3 {
+			return nil, fmt.Errorf("want 3 params, got %d", len(vs))
+		}
+		return f(vs[0], vs[1], vs[2])
+	}
+	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
+}
+
 func Values(e types.Env, name string, f func(xs []types.Value) (types.Value, error)) {
 	e.Bind(name, expr.NewBuiltinFunction(name, f))
 }
@@ -399,6 +409,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("true", expr.TrueValue)
 	e.Bind("false", expr.FalseValue)
 	e.Bind("maybe", unknown.MaybeValue)
+	e.Bind("unknown", unknown.FullyUnknown{})
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)
@@ -515,6 +526,41 @@ func BindDefaults(e types.Env) {
 		}
 
 		return expr.WrapList(rv), nil
+	})
+
+	Ternary(e, "reduce-left", func(f, initial, l types.Value) (types.Value, error) {
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, errors.New("not a callable")
+		}
+
+		xs, err := expr.UnwrapList(l)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(xs) == 0 {
+			return initial, nil
+		}
+
+		if len(xs) == 1 {
+			return xs[0], nil
+		}
+
+		reduced, err := callable.Call([]types.Value{xs[0], xs[1]})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, x := range xs[2:] {
+			next, err := callable.Call([]types.Value{reduced, x})
+			if err != nil {
+				return nil, err
+			}
+			reduced = next
+		}
+
+		return reduced, nil
 	})
 
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
