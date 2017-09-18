@@ -403,6 +403,10 @@ func BindDefaults(e types.Env) {
 		return expr.ToSymbol(a.TypeName()), nil
 	})
 
+	Unary(e, "_to-string", func(a types.Value) (types.Value, error) {
+		return expr.String(a.String()), nil
+	})
+
 	Unary(e, "_unknown?", func(a types.Value) (types.Value, error) {
 		return expr.Bool(a.Uncertain()), nil
 	})

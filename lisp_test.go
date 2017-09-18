@@ -135,6 +135,10 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(not (_atom-eq? false (any-of true false)))`,
 		`(_atom-eq? true (not (_atom-eq? true (any-of true false))))`,
 		`(simply-equal? (list 1 2) (possible-values (if (any-of true false) 1 2)))`,
+		`(_atom-eq? "true" (_to-string true))`,
+		`(_atom-eq? "false" (_to-string false))`,
+		`(_atom-eq? "maybe" (_to-string (any-of true false)))`,
+		`(_atom-eq? "maybe" (_to-string (any-of false true)))`,
 	}
 
 	for i, s := range exprs {
