@@ -1,5 +1,7 @@
 (defun! list (&rest xs) xs)
 
+(defun! zero? (n) (_atom-eq? 0 n))
+
 (defun! nil? (x) (_atom-eq? nil x))
 
 (defun! first (xs) (car xs))
@@ -15,3 +17,6 @@
        ,(if (nil? more-clauses)
             nil
             (cons 'cond more-clauses))))
+
+(defun! inc (n) (+ n 1))
+(defun! dec (n) (- n 1))

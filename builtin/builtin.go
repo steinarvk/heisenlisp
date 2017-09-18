@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
@@ -470,6 +471,52 @@ func BindDefaults(e types.Env) {
 		return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
 	})
 
+	Unary(e, "length", func(a types.Value) (types.Value, error) {
+		xs, err := expr.UnwrapList(a)
+		if err != nil {
+			return nil, err
+		}
+		return expr.Integer(len(xs)), nil
+	})
+
+	Binary(e, "apply", func(f, args types.Value) (types.Value, error) {
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, errors.New("not a callable")
+		}
+
+		xs, err := expr.UnwrapList(args)
+		if err != nil {
+			return nil, err
+		}
+
+		return callable.Call(xs)
+	})
+
+	Binary(e, "map", func(f, l types.Value) (types.Value, error) {
+		// TODO: handle uncertainty
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, errors.New("not a callable")
+		}
+
+		xs, err := expr.UnwrapList(l)
+		if err != nil {
+			return nil, err
+		}
+
+		var rv []types.Value
+		for _, x := range xs {
+			xm, err := callable.Call([]types.Value{x})
+			if err != nil {
+				return nil, err
+			}
+			rv = append(rv, xm)
+		}
+
+		return expr.WrapList(rv), nil
+	})
+
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
 		return unknown.NewMaybeAnyOf(xs)
 	})
@@ -480,6 +527,19 @@ func BindDefaults(e types.Env) {
 			return expr.WrapList(vals), nil
 		}
 		return unknown.FullyUnknown{}, nil
+	})
+
+	Unary(e, "range", func(v types.Value) (types.Value, error) {
+		n, err := expr.IntegerValue(v)
+		if err != nil {
+			return nil, err
+		}
+
+		var xs []types.Value
+		for i := int64(0); i < n; i++ {
+			xs = append(xs, expr.Integer(i))
+		}
+		return expr.WrapList(xs), nil
 	})
 
 	// todo: the arithmetic functions need to be made unknown-aware.
@@ -539,7 +599,7 @@ func BindDefaults(e types.Env) {
 	})
 }
 
-func listFilesInOrder(dirname string) ([]string, error) {
+func listLispFilesInOrder(dirname string) ([]string, error) {
 	infos, err := ioutil.ReadDir(dirname)
 	if err != nil {
 		return nil, err
@@ -547,7 +607,9 @@ func listFilesInOrder(dirname string) ([]string, error) {
 
 	var rv []string
 	for _, info := range infos {
-		rv = append(rv, filepath.Join(dirname, info.Name()))
+		if strings.HasSuffix(info.Name(), ".hlisp") {
+			rv = append(rv, filepath.Join(dirname, info.Name()))
+		}
 	}
 	sort.Strings(rv)
 	return rv, nil
@@ -561,7 +623,7 @@ func loadFile(e types.Env, fn string) error {
 func loadStandardLibrary(e types.Env) error {
 	// TODO: for compiled binaries, embed standard library
 
-	fns, err := listFilesInOrder("./core")
+	fns, err := listLispFilesInOrder("./core")
 	if err != nil {
 		return err
 	}

@@ -328,6 +328,14 @@ func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f
 func (f *BuiltinFunctionValue) Falsey() bool    { return false }
 func (f *BuiltinFunctionValue) Uncertain() bool { return false }
 
+func IntegerValue(v types.Value) (int64, error) {
+	rv, ok := v.(Integer)
+	if !ok {
+		return 0, errors.New("not an integer")
+	}
+	return int64(rv), nil
+}
+
 func StringValue(v types.Value) (string, error) {
 	rv, ok := v.(String)
 	if !ok {

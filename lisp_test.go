@@ -6,14 +6,12 @@ import (
 	"testing"
 
 	"github.com/steinarvk/heisenlisp/builtin"
-	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/gen/parser"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
 func TestExpressionsTruthy(t *testing.T) {
-	root := env.New(nil)
-	builtin.BindDefaults(root)
+	root := builtin.NewRootEnv()
 
 	exprs := []string{
 		"123",
@@ -139,6 +137,10 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_atom-eq? "false" (_to-string false))`,
 		`(_atom-eq? "maybe" (_to-string (any-of true false)))`,
 		`(_atom-eq? "maybe" (_to-string (any-of false true)))`,
+		`(_atom-eq? "false" (_to-string false))`,
+		`(_atom-eq? "(0 1 2 3 4 5)" (_to-string (range 6)))`,
+		`(_atom-eq? "(1 2 3 4 5 6)" (_to-string (map inc (range 6))))`,
+		`(_atom-eq? "(-1 0 1 2 3 4)" (_to-string (map dec (range 6))))`,
 	}
 
 	for i, s := range exprs {
