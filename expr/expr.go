@@ -10,6 +10,11 @@ import (
 
 type Bool bool
 
+var (
+	TrueValue  = Bool(true)
+	FalseValue = Bool(false)
+)
+
 func (b Bool) AtomEquals(other types.Atom) bool {
 	o, ok := other.(Bool)
 	return ok && o == b

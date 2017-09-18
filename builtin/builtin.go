@@ -111,7 +111,7 @@ func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 
 		return unknown.NewMaybeAnyOf([]types.Value{
 			thenVal, elseVal,
-		}), nil
+		})
 	case unknown.True:
 		return thenClause.Eval(e)
 	case unknown.False:
@@ -297,20 +297,17 @@ func (i andSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		case unknown.True:
 			break
 		case unknown.False:
-			return expr.Bool(false), nil
+			return expr.FalseValue, nil
 		default:
 			knownToMaybeBeFalse = true
 		}
 	}
 
 	if knownToMaybeBeFalse {
-		return unknown.NewMaybeAnyOf([]types.Value{
-			expr.Bool(true),
-			expr.Bool(false),
-		}), nil
+		return unknown.MaybeValue, nil
 	}
 
-	return expr.Bool(true), nil
+	return expr.TrueValue, nil
 }
 
 type orSpecialForm struct{}
@@ -334,7 +331,7 @@ func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 		}
 		switch truth {
 		case unknown.True:
-			return expr.Bool(true), nil
+			return expr.TrueValue, nil
 		case unknown.False:
 			break
 		default:
@@ -343,13 +340,10 @@ func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 	}
 
 	if knownToMaybeBeTrue {
-		return unknown.NewMaybeAnyOf([]types.Value{
-			expr.Bool(true),
-			expr.Bool(false),
-		}), nil
+		return unknown.MaybeValue, nil
 	}
 
-	return expr.Bool(false), nil
+	return expr.FalseValue, nil
 }
 
 type lambdaSpecialForm struct{}
@@ -392,8 +386,9 @@ func BindDefaults(e types.Env) {
 	e.Bind("let", &letSpecialForm{})
 
 	e.Bind("nil", expr.NilValue{})
-	e.Bind("true", expr.Bool(true))
-	e.Bind("false", expr.Bool(false))
+	e.Bind("true", expr.TrueValue)
+	e.Bind("false", expr.FalseValue)
+	e.Bind("maybe", unknown.MaybeValue)
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)
@@ -431,19 +426,17 @@ func BindDefaults(e types.Env) {
 		}
 		switch val {
 		case unknown.False:
-			return expr.Bool(true), nil
+			return expr.TrueValue, nil
 		case unknown.True:
-			return expr.Bool(false), nil
+			return expr.FalseValue, nil
 		case unknown.Maybe:
-			return unknown.NewMaybeAnyOf([]types.Value{
-				expr.Bool(true), expr.Bool(false),
-			}), nil
+			return unknown.MaybeValue, nil
 		}
 		return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
 	})
 
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
-		return unknown.NewMaybeAnyOf(xs), nil
+		return unknown.NewMaybeAnyOf(xs)
 	})
 
 	Unary(e, "possible-values", func(v types.Value) (types.Value, error) {
@@ -504,10 +497,10 @@ func BindDefaults(e types.Env) {
 		v := int64(xs[0])
 		for _, x := range xs[1:] {
 			if int64(x) != v {
-				return expr.Bool(false), nil
+				return expr.FalseValue, nil
 			}
 		}
-		return expr.Bool(true), nil
+		return expr.TrueValue, nil
 	})
 }
 

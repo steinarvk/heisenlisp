@@ -1,6 +1,7 @@
 package unknown
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -24,7 +25,26 @@ type anyOf struct {
 	vals []types.Value
 }
 
+func (a anyOf) isMaybe() bool {
+	if len(a.vals) != 2 {
+		return false
+	}
+	val1, ok1 := a.vals[0].(expr.Bool)
+	val2, ok2 := a.vals[1].(expr.Bool)
+	if !ok1 || !ok2 {
+		return false
+	}
+	if val1 == expr.Bool(true) && val2 == expr.Bool(false) {
+		return true
+	}
+	return val1 == expr.Bool(false) && val2 == expr.Bool(true)
+}
+
 func (a anyOf) String() string {
+	if a.isMaybe() {
+		return "maybe"
+	}
+
 	var xs []string
 	for _, x := range a.possibleValues() {
 		xs = append(xs, x.String())
@@ -82,7 +102,29 @@ func NewAnyOf(xs []types.Value) types.Value {
 	return rv
 }
 
-func NewMaybeAnyOf(xs []types.Value) types.Value {
+var (
+	MaybeValue = NewMaybeAnyOfOrPanic([]types.Value{
+		expr.TrueValue, expr.FalseValue,
+	})
+)
+
+func NewMaybeAnyOfOrPanic(xs []types.Value) types.Value {
+	rv, err := NewMaybeAnyOf(xs)
+	if err != nil {
+		panic(err)
+	}
+	return rv
+}
+
+func NewMaybeAnyOf(xs []types.Value) (types.Value, error) {
+	if len(xs) == 0 {
+		return nil, errors.New("no options for any-of")
+	}
+
+	if len(xs) == 1 {
+		return xs[0], nil
+	}
+
 	rv := NewAnyOf(xs).(anyOf)
 	if len(rv.possibleValues()) > maxAnyOfElements {
 		// past a certain limit we start discarding information to not allow the
@@ -90,9 +132,10 @@ func NewMaybeAnyOf(xs []types.Value) types.Value {
 		// note that returning a FullyUnknown is the last resort; other options
 		// would be returning something with constrained type or value, e.g.
 		// a numerically constrained value.
-		return FullyUnknown{}
+		return FullyUnknown{}, nil
 	}
-	return rv
+
+	return rv, nil
 }
 
 func MayBeTruthy(v types.Value) (bool, error) {

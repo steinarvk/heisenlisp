@@ -16,7 +16,7 @@ func TestMaybeLogic(t *testing.T) {
 	cases := []testcase{
 		{expr.Bool(true), True},
 		{expr.Bool(false), False},
-		{NewMaybeAnyOf([]types.Value{
+		{NewMaybeAnyOfOrPanic([]types.Value{
 			expr.Bool(true),
 			expr.Bool(false),
 		}), Maybe},
