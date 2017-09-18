@@ -1,0 +1,6 @@
+(set! args (list 1 2 3 4 5))
+(set! args-with-unknown (list 1 2 3 4 5 (any-of 1 6)))
+
+(_assert! "120" (apply * args))
+(_assert! "#any-of(120 720)" (apply * args-with-unknown))
+(_assert! "0" (apply * (cons 0 args-with-unknown)))

@@ -592,16 +592,7 @@ func BindDefaults(e types.Env) {
 	Binary(e, "low-level-plus", numerics.BinaryPlus)
 	Binary(e, "low-level-minus", numerics.BinaryMinus)
 	Binary(e, "low-level-multiply", numerics.BinaryMultiply)
-
-	Integers(e, "mod", func(xs []expr.Integer) (types.Value, error) {
-		if len(xs) != 2 {
-			return nil, fmt.Errorf("mod: got %d params want 2", len(xs))
-		}
-		if xs[1] == 0 {
-			return nil, errors.New("division by zero")
-		}
-		return expr.Integer(int64(xs[0]) % int64(xs[1])), nil
-	})
+	Binary(e, "mod", numerics.Mod)
 
 	Integers(e, "=", func(xs []expr.Integer) (types.Value, error) {
 		if len(xs) == 0 {

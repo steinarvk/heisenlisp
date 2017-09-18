@@ -1,6 +1,7 @@
 package numerics
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/expr"
@@ -95,5 +96,18 @@ func BinaryMultiply(a, b types.Value) (types.Value, error) {
 
 	return wrapBinary(a, b, toBinaryInt64(func(a, b int64) (types.Value, error) {
 		return fromInt64(a * b), nil
+	}))
+}
+
+func Mod(a, b types.Value) (types.Value, error) {
+	if unknown.IsFullyUnknown(a) || unknown.IsFullyUnknown(b) {
+		return unknown.FullyUnknown{}, nil
+	}
+
+	return wrapBinary(a, b, toBinaryInt64(func(a, b int64) (types.Value, error) {
+		if b == 0 {
+			return nil, errors.New("division by zero")
+		}
+		return fromInt64(a % b), nil
 	}))
 }
