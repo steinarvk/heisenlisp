@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/steinarvk/heisenlisp/builtin"
+	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/gen/parser"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
@@ -203,6 +205,82 @@ func TestExpressionsTruthy(t *testing.T) {
 
 		if result.Falsey() {
 			t.Errorf("falsey result for #%d %q: %v", i, s, result)
+		}
+	}
+}
+
+var values = []string{
+	"123",
+	"true",
+	"false",
+	"maybe",
+	"unknown",
+	"\"hello\"",
+	"(quote hello)",
+	"(list 1 2 3)",
+	"(list 1 2 4)",
+	"(cons 1 2)",
+	"(cons 1 3)",
+	"(list)",
+	"(any-of 123 124)",
+	"(list 1 2 (any-of 3 4))",
+}
+
+func TestUnaryInvariants(t *testing.T) {
+	templates := []string{
+		"(may? (equals? EXPR EXPR))",
+		"(or (uncertain? EXPR) (equals? EXPR EXPR))",
+	}
+	for _, inserted := range values {
+		for _, template := range templates {
+			s := strings.Replace(template, "EXPR", inserted, -1)
+			name := fmt.Sprintf("<unary invariant: %q>", s)
+
+			result, err := code.Run(builtin.NewRootEnv(), name, []byte(s))
+			if err != nil {
+				t.Errorf("code.Run(..., %q) = err: %v", s, err)
+				continue
+			}
+
+			if unknown.IsUncertain(result) {
+				t.Errorf("code.Run(..., %q) = %v (uncertain)", s, result)
+				continue
+			}
+
+			if result.Falsey() {
+				t.Errorf("code.Run(..., %q) = %v (falsey)", s, result)
+			}
+		}
+	}
+}
+
+func TestBinaryInvariants(t *testing.T) {
+	templates := []string{
+		"(_dumb-equals? (= EXPR1 EXPR2) (= EXPR2 EXPR1))",
+	}
+	for _, inserted1 := range values {
+		for _, inserted2 := range values {
+			for _, template := range templates {
+				s := strings.Replace(template, "EXPR1", inserted1, -1)
+				s = strings.Replace(s, "EXPR2", inserted2, -1)
+
+				name := fmt.Sprintf("<binary invariant: %q>", s)
+
+				result, err := code.Run(builtin.NewRootEnv(), name, []byte(s))
+				if err != nil {
+					t.Errorf("code.Run(..., %q) = err: %v", s, err)
+					continue
+				}
+
+				if unknown.IsUncertain(result) {
+					t.Errorf("code.Run(..., %q) = %v (uncertain)", s, result)
+					continue
+				}
+
+				if result.Falsey() {
+					t.Errorf("code.Run(..., %q) = %v (falsey)", s, result)
+				}
+			}
 		}
 	}
 }

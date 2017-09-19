@@ -32,3 +32,11 @@
 
 (defun! inc (n) (+ n 1))
 (defun! dec (n) (- n 1))
+
+(defun! _cons? (x) (equals? 'cons (_type x)))
+
+(defun! uncertain? (x)
+  (if (_cons? x)
+      (or (uncertain? (car x))
+          (uncertain? (cdr x)))
+      (_uncertain? x)))
