@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -174,7 +177,6 @@ func TestExpressionsTruthy(t *testing.T) {
 	}
 
 	for i, s := range exprs {
-		log.Printf("testcase %d: %s", i, s)
 		rv, err := parser.Parse(fmt.Sprintf("<testcase %d>", i), []byte(s))
 		if err != nil {
 			t.Errorf("error parsing #%d %q: %v", i, s, err)
@@ -287,6 +289,59 @@ func TestBinaryInvariants(t *testing.T) {
 					t.Errorf("code.Run(..., %q) = %v (falsey)", s, result)
 				}
 			}
+		}
+	}
+}
+
+func listLispFilesInOrder(dirname string) ([]string, error) {
+	infos, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+
+	var rv []string
+	for _, info := range infos {
+		if strings.HasSuffix(info.Name(), ".hlisp") {
+			rv = append(rv, filepath.Join(dirname, info.Name()))
+		}
+	}
+	sort.Strings(rv)
+	return rv, nil
+}
+
+func TestExamples(t *testing.T) {
+	dirname := "./examples/"
+
+	worksInProgress := []string{
+		"list-contains.hlisp",
+		"lists-of-unknown-length.hlisp",
+		"two-digit-numbers.hlisp",
+	}
+
+	filenames, err := listLispFilesInOrder(dirname)
+	if err != nil {
+		t.Fatalf("listLispFilesInOrder(%q) = err: %v", dirname, err)
+	}
+
+	wip := map[string]bool{}
+	for _, s := range worksInProgress {
+		wip[s] = true
+	}
+
+	for _, filename := range filenames {
+		isWIP := wip[filepath.Base(filename)]
+
+		_, err := code.RunFile(builtin.NewRootEnv(), filename)
+		if !isWIP {
+			if err != nil {
+				t.Errorf("code.RunFile(..., %q) = err: %v", filename, err)
+			}
+		} else {
+			status := "now passing :D"
+			if err != nil {
+				status = "still failing "
+			}
+			log.Printf("WIP test %s %q: %v", status, filename, err)
 		}
 	}
 }
