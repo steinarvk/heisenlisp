@@ -1,3 +1,4 @@
 *.swp
 /heisenlisp
 /cover.out
+.heisenlisp_history

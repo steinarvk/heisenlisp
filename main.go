@@ -4,9 +4,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/chzyer/readline"
+	"github.com/fatih/color"
 
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
@@ -33,22 +37,41 @@ func mainCoreExecuteScript(filename string) error {
 
 func mainCoreREPL() error {
 	wr := bufio.NewWriter(os.Stdout)
-	scanner := bufio.NewScanner(os.Stdin)
 
-	prompt := "..? "
+	reader, err := readline.NewEx(&readline.Config{
+		Prompt:      color.GreenString("..? "),
+		HistoryFile: ".heisenlisp_history",
+	})
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
 
 	root := builtin.NewRootEnv()
 
-	wr.Write([]byte(prompt))
-	wr.Flush()
-
-	for scanner.Scan() {
-		text := scanner.Text()
+	for {
+		text, err := reader.Readline()
+		if err == readline.ErrInterrupt {
+			if len(text) == 0 {
+				break
+			} else {
+				continue
+			}
+		} else if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
 
 		if strings.TrimSpace(text) == "" {
-			wr.Write([]byte(prompt))
-			wr.Flush()
 			continue
+		}
+
+		verboseString := func(s string) string {
+			if *verbose {
+				return s
+			}
+			return ""
 		}
 
 		expressionsIntf, err := parser.Parse("<stdin>", []byte(text))
@@ -58,23 +81,19 @@ func mainCoreREPL() error {
 			expressions := expressionsIntf.([]interface{})
 
 			for _, expression := range expressions {
-				wr.Write([]byte(fmt.Sprintf("(read) ==> %v\n", expression)))
+				if *verbose {
+					wr.Write([]byte(fmt.Sprintf("%s%s %v\n", color.MagentaString(verboseString("(read) ")), color.MagentaString("==>"), expression)))
+				}
 
 				evaled, err := expression.(types.Value).Eval(root)
 				if err != nil {
 					wr.Write([]byte(fmt.Sprintf("==! eval error: %v\n", err)))
 				} else {
-					wr.Write([]byte(fmt.Sprintf("(eval) ==> %v\n", evaled)))
+					wr.Write([]byte(fmt.Sprintf("%s%s %v\n", color.YellowString(verboseString("(eval) ")), color.YellowString("==>"), evaled)))
 				}
 			}
 		}
-
-		wr.Write([]byte(prompt))
 		wr.Flush()
-	}
-
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading input: %v", err)
 	}
 
 	return nil
