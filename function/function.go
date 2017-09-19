@@ -214,8 +214,7 @@ func (f *FunctionValue) String() string {
 }
 func (f *FunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
-func (f *FunctionValue) Falsey() bool    { return false }
-func (f *FunctionValue) Uncertain() bool { return false }
+func (f *FunctionValue) Falsey() bool { return false }
 
 func (_ *MacroValue) TypeName() string { return "macro" }
 func (f *MacroValue) errorprefix() string {
@@ -251,5 +250,4 @@ func (f *MacroValue) String() string {
 }
 func (f *MacroValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
-func (f *MacroValue) Falsey() bool    { return false }
-func (f *MacroValue) Uncertain() bool { return false }
+func (f *MacroValue) Falsey() bool { return false }

@@ -1,0 +1,3 @@
+#!/bin/bash
+go test -coverprofile cover.out --coverpkg ./...
+go tool cover -html cover.out

@@ -33,16 +33,6 @@ func wrap(name string, f func(a []types.Value) (types.Value, error)) func([]type
 	return fw
 }
 
-func Nullary(e types.Env, name string, f func() (types.Value, error)) {
-	checker := func(vs []types.Value) (types.Value, error) {
-		if len(vs) != 0 {
-			return nil, fmt.Errorf("want no params, got %d", len(vs))
-		}
-		return f()
-	}
-	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
-}
-
 func Unary(e types.Env, name string, f func(a types.Value) (types.Value, error)) {
 	checker := func(vs []types.Value) (types.Value, error) {
 		if len(vs) != 1 {
@@ -77,21 +67,6 @@ func Values(e types.Env, name string, f func(xs []types.Value) (types.Value, err
 	e.Bind(name, expr.NewBuiltinFunction(name, f))
 }
 
-func Integers(e types.Env, name string, f func([]expr.Integer) (types.Value, error)) {
-	checker := func(vs []types.Value) (types.Value, error) {
-		var iparams []expr.Integer
-		for i, v := range vs {
-			iv, ok := v.(expr.Integer)
-			if !ok {
-				return nil, fmt.Errorf("param #%d: want Integer, got %v", i, v)
-			}
-			iparams = append(iparams, iv)
-		}
-		return f(iparams)
-	}
-	e.Bind(name, expr.NewBuiltinFunction(name, wrap(name, checker)))
-}
-
 func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s) }
 
 type ifSpecialForm struct{}
@@ -99,7 +74,6 @@ type ifSpecialForm struct{}
 func (i ifSpecialForm) TypeName() string                    { return "special" }
 func (i ifSpecialForm) String() string                      { return specialFormString("if") }
 func (i ifSpecialForm) Falsey() bool                        { return false }
-func (i ifSpecialForm) Uncertain() bool                     { return false }
 func (i ifSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) != 3 {
@@ -146,7 +120,6 @@ type setSpecialForm struct{}
 func (i setSpecialForm) TypeName() string                    { return "special" }
 func (i setSpecialForm) String() string                      { return specialFormString("set!") }
 func (i setSpecialForm) Falsey() bool                        { return false }
-func (i setSpecialForm) Uncertain() bool                     { return false }
 func (i setSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) != 2 {
@@ -173,7 +146,6 @@ type quoteSpecialForm struct{}
 func (i quoteSpecialForm) TypeName() string                    { return "special" }
 func (i quoteSpecialForm) String() string                      { return specialFormString("quote") }
 func (i quoteSpecialForm) Falsey() bool                        { return false }
-func (i quoteSpecialForm) Uncertain() bool                     { return false }
 func (i quoteSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i quoteSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) != 1 {
@@ -187,7 +159,6 @@ type quasiquoteSpecialForm struct{}
 func (i quasiquoteSpecialForm) TypeName() string                    { return "special" }
 func (i quasiquoteSpecialForm) String() string                      { return specialFormString("quasiquote") }
 func (i quasiquoteSpecialForm) Falsey() bool                        { return false }
-func (i quasiquoteSpecialForm) Uncertain() bool                     { return false }
 func (i quasiquoteSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i quasiquoteSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) != 1 {
@@ -201,7 +172,6 @@ type defunSpecialForm struct{}
 func (i defunSpecialForm) TypeName() string                    { return "special" }
 func (i defunSpecialForm) String() string                      { return specialFormString("defun!") }
 func (i defunSpecialForm) Falsey() bool                        { return false }
-func (i defunSpecialForm) Uncertain() bool                     { return false }
 func (i defunSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) < 3 {
@@ -228,7 +198,6 @@ type defmacroSpecialForm struct{}
 func (i defmacroSpecialForm) TypeName() string                    { return "special" }
 func (i defmacroSpecialForm) String() string                      { return specialFormString("defmacro!") }
 func (i defmacroSpecialForm) Falsey() bool                        { return false }
-func (i defmacroSpecialForm) Uncertain() bool                     { return false }
 func (i defmacroSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i defmacroSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) < 3 {
@@ -255,7 +224,6 @@ type letSpecialForm struct{}
 func (i letSpecialForm) TypeName() string                    { return "special" }
 func (i letSpecialForm) String() string                      { return specialFormString("let") }
 func (i letSpecialForm) Falsey() bool                        { return false }
-func (i letSpecialForm) Uncertain() bool                     { return false }
 func (i letSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	// (let (bindings) forms...)
@@ -300,7 +268,6 @@ type andSpecialForm struct{}
 func (i andSpecialForm) TypeName() string                    { return "special" }
 func (i andSpecialForm) String() string                      { return specialFormString("and") }
 func (i andSpecialForm) Falsey() bool                        { return false }
-func (i andSpecialForm) Uncertain() bool                     { return false }
 func (i andSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i andSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	knownToMaybeBeFalse := false
@@ -336,7 +303,6 @@ type orSpecialForm struct{}
 func (i orSpecialForm) TypeName() string                    { return "special" }
 func (i orSpecialForm) String() string                      { return specialFormString("or") }
 func (i orSpecialForm) Falsey() bool                        { return false }
-func (i orSpecialForm) Uncertain() bool                     { return false }
 func (i orSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	knownToMaybeBeTrue := false
@@ -372,7 +338,6 @@ type lambdaSpecialForm struct{}
 func (i lambdaSpecialForm) TypeName() string                    { return "special" }
 func (i lambdaSpecialForm) String() string                      { return specialFormString("lambda") }
 func (i lambdaSpecialForm) Falsey() bool                        { return false }
-func (i lambdaSpecialForm) Uncertain() bool                     { return false }
 func (i lambdaSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
 func (i lambdaSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
 	if len(unevaluated) < 2 {
