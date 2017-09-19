@@ -405,6 +405,8 @@ func BindDefaults(e types.Env) {
 	e.Bind("quote", &quoteSpecialForm{})
 	e.Bind("quasiquote", &quasiquoteSpecialForm{})
 	e.Bind("let", &letSpecialForm{})
+	e.Bind("and", &andSpecialForm{})
+	e.Bind("or", &orSpecialForm{})
 
 	e.Bind("nil", expr.NilValue{})
 	e.Bind("true", expr.TrueValue)
@@ -455,7 +457,11 @@ func BindDefaults(e types.Env) {
 		return expr.Bool(unknown.IsUncertain(a)), nil
 	})
 
-	Binary(e, "equals?", func(a, b types.Value) (types.Value, error) {
+	checkEquality := func(a, b types.Value) (types.Value, error) {
+		// TODO: non-binary equality checking in heisenlisp.
+		// Consider: (= (any-of 0 1) (any-of 1 2) (any-of 0 3))
+		// We need to precisely define what exactly this means.
+		// I guess it _should_ mean taking the intersection of all of these?
 		tv, err := expr.Equals(a, b)
 		if err != nil {
 			return nil, err
@@ -469,7 +475,10 @@ func BindDefaults(e types.Env) {
 			return unknown.MaybeValue, nil
 		}
 		panic("impossible")
-	})
+	}
+
+	Binary(e, "equals?", checkEquality)
+	Binary(e, "=", checkEquality)
 
 	Binary(e, "cons", func(a, b types.Value) (types.Value, error) {
 		return expr.Cons(a, b), nil
@@ -497,6 +506,32 @@ func BindDefaults(e types.Env) {
 			return unknown.MaybeValue, nil
 		}
 		return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
+	})
+
+	Unary(e, "may?", func(a types.Value) (types.Value, error) {
+		val, err := unknown.TruthValue(a)
+		if err != nil {
+			return nil, err
+		}
+		switch val {
+		case types.False:
+			return expr.FalseValue, nil
+		default:
+			return expr.TrueValue, nil
+		}
+	})
+
+	Unary(e, "must?", func(a types.Value) (types.Value, error) {
+		val, err := unknown.TruthValue(a)
+		if err != nil {
+			return nil, err
+		}
+		switch val {
+		case types.True:
+			return expr.TrueValue, nil
+		default:
+			return expr.FalseValue, nil
+		}
 	})
 
 	Unary(e, "length", func(a types.Value) (types.Value, error) {
@@ -609,19 +644,6 @@ func BindDefaults(e types.Env) {
 	Binary(e, "low-level-minus", numerics.BinaryMinus)
 	Binary(e, "low-level-multiply", numerics.BinaryMultiply)
 	Binary(e, "mod", numerics.Mod)
-
-	Integers(e, "=", func(xs []expr.Integer) (types.Value, error) {
-		if len(xs) == 0 {
-			return nil, fmt.Errorf("cannot check equality of no values")
-		}
-		v := int64(xs[0])
-		for _, x := range xs[1:] {
-			if int64(x) != v {
-				return expr.FalseValue, nil
-			}
-		}
-		return expr.TrueValue, nil
-	})
 }
 
 func listLispFilesInOrder(dirname string) ([]string, error) {
