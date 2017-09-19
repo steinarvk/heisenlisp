@@ -1,0 +1,9 @@
+(defun! is-two-digit? (n)
+  (and (<= 10 n) (<= n 99)))
+
+(_assert! "true" (is-two-digit? 42))
+(_assert! "false" (is-two-digit? 101))
+(_assert! "false" (is-two-digit? 9))
+(_assert! "maybe" (is-two-digit? (any-of 42 101)))
+(_assert! "true" (is-two-digit? (any-of 42 85)))
+(_assert! "maybe" (is-two-digit? unknown))
