@@ -231,12 +231,15 @@ func TestUnaryInvariants(t *testing.T) {
 		"(may? (equals? EXPR EXPR))",
 		"(or (uncertain? EXPR) (equals? EXPR EXPR))",
 	}
+
+	env := builtin.NewRootEnv()
+
 	for _, inserted := range values {
 		for _, template := range templates {
 			s := strings.Replace(template, "EXPR", inserted, -1)
 			name := fmt.Sprintf("<unary invariant: %q>", s)
 
-			result, err := code.Run(builtin.NewRootEnv(), name, []byte(s))
+			result, err := code.Run(env, name, []byte(s))
 			if err != nil {
 				t.Errorf("code.Run(..., %q) = err: %v", s, err)
 				continue
@@ -258,6 +261,9 @@ func TestBinaryInvariants(t *testing.T) {
 	templates := []string{
 		"(_dumb-equals? (= EXPR1 EXPR2) (= EXPR2 EXPR1))",
 	}
+
+	env := builtin.NewRootEnv()
+
 	for _, inserted1 := range values {
 		for _, inserted2 := range values {
 			for _, template := range templates {
@@ -266,7 +272,7 @@ func TestBinaryInvariants(t *testing.T) {
 
 				name := fmt.Sprintf("<binary invariant: %q>", s)
 
-				result, err := code.Run(builtin.NewRootEnv(), name, []byte(s))
+				result, err := code.Run(env, name, []byte(s))
 				if err != nil {
 					t.Errorf("code.Run(..., %q) = err: %v", s, err)
 					continue
