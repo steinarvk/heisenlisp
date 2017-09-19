@@ -8,6 +8,7 @@ import (
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/gen/parser"
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/unknown"
 )
 
 func TestExpressionsTruthy(t *testing.T) {
@@ -143,6 +144,8 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_atom-eq? "(-1 0 1 2 3 4)" (_to-string (map dec (range 6))))`,
 		`(_atom-eq? "1" (_to-string (reduce-left * 1 nil)))`,
 		`(_atom-eq? "120" (_to-string (reduce-left * 1 (map inc (range 5)))))`,
+		`(equals? (list 1 2 3) (list 1 2 3))`,
+		`(not (equals? (list 1 2 3) (list 1 2 4)))`,
 	}
 
 	for i, s := range exprs {
@@ -170,7 +173,7 @@ func TestExpressionsTruthy(t *testing.T) {
 			continue
 		}
 
-		if result.Uncertain() {
+		if unknown.IsUncertain(result) {
 			t.Errorf("uncertain result for #%d %q: %v", i, s, result)
 			continue
 		}

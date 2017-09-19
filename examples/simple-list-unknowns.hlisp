@@ -1,0 +1,4 @@
+(_assert! "true" (equals? (list 1 2 3) (list 1 2 3)))
+(_assert! "maybe" (equals? (list 1 2 3) (list 1 2 unknown)))
+(_assert! "false" (equals? (list 1 2 3) (list 1 2 (any-of 4 5))))
+(_assert! "false" (equals? (list 1 2 3) (list 1 2 unknown 4)))

@@ -1,11 +1,23 @@
 package types
 
+type TernaryTruthValue string
+
+const (
+	False          = TernaryTruthValue("false")
+	True           = TernaryTruthValue("true")
+	Maybe          = TernaryTruthValue("maybe")
+	InvalidTernary = TernaryTruthValue("invalid")
+)
+
 type Value interface {
 	String() string
 	Falsey() bool
 	TypeName() string
-	Uncertain() bool
 	Eval(e Env) (Value, error)
+}
+
+type Unknown interface {
+	Intersects(Value) (bool, error)
 }
 
 type Atom interface {

@@ -18,8 +18,12 @@ type FullyUnknown struct{}
 func (_ FullyUnknown) String() string                        { return "#unknown" }
 func (f FullyUnknown) Eval(_ types.Env) (types.Value, error) { return f, nil }
 func (_ FullyUnknown) Falsey() bool                          { return false }
-func (_ FullyUnknown) Uncertain() bool                       { return true }
 func (_ FullyUnknown) TypeName() string                      { return "unknown" }
+
+func (_ FullyUnknown) Intersects(v types.Value) (bool, error) {
+	// result is: v
+	return true, nil
+}
 
 func IsFullyUnknown(v types.Value) bool {
 	_, ok := v.(FullyUnknown)
@@ -58,7 +62,6 @@ func (a anyOf) String() string {
 }
 
 func (a anyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
-func (a anyOf) Uncertain() bool                       { return true }
 func (a anyOf) Falsey() bool                          { return false }
 func (_ anyOf) TypeName() string                      { return "any-of" }
 
@@ -66,8 +69,39 @@ func (a anyOf) possibleValues() []types.Value {
 	return a.vals
 }
 
+func (a anyOf) Intersects(v types.Value) (bool, error) {
+	if IsFullyUnknown(v) {
+		return true, nil
+	}
+
+	xs, ok1 := PossibleValues(a)
+	ys, ok2 := PossibleValues(v)
+	if !ok1 || !ok2 {
+		return false, fmt.Errorf("unable to calculate intersection of: %v and %v", a, v)
+	}
+
+	for _, x := range xs {
+		for _, y := range ys {
+			ternaryBool, err := expr.Equals(x, y)
+			if err != nil {
+				return false, err
+			}
+			switch ternaryBool {
+			case types.False:
+				break
+			case types.Maybe:
+				return true, nil
+			case types.True:
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
 func PossibleValues(v types.Value) ([]types.Value, bool) {
-	if !v.Uncertain() {
+	if !IsUncertain(v) {
 		return []types.Value{v}, true
 	}
 
@@ -157,7 +191,7 @@ func NewMaybeAnyOf(xs []types.Value) (types.Value, error) {
 }
 
 func MayBeTruthy(v types.Value) (bool, error) {
-	if !v.Uncertain() {
+	if !IsUncertain(v) {
 		return !v.Falsey(), nil
 	}
 
@@ -179,7 +213,7 @@ func MayBeTruthy(v types.Value) (bool, error) {
 }
 
 func MayBeFalsey(v types.Value) (bool, error) {
-	if !v.Uncertain() {
+	if !IsUncertain(v) {
 		return v.Falsey(), nil
 	}
 
@@ -200,32 +234,28 @@ func MayBeFalsey(v types.Value) (bool, error) {
 	return true, nil
 }
 
-type TernaryTruthValue string
-
-const (
-	False   = TernaryTruthValue("false")
-	True    = TernaryTruthValue("true")
-	Maybe   = TernaryTruthValue("maybe")
-	invalid = TernaryTruthValue("invalid")
-)
-
-func TruthValue(v types.Value) (TernaryTruthValue, error) {
+func TruthValue(v types.Value) (types.TernaryTruthValue, error) {
 	mbTrue, err := MayBeTruthy(v)
 	if err != nil {
-		return invalid, err
+		return types.InvalidTernary, err
 	}
 	mbFalse, err := MayBeFalsey(v)
 	if err != nil {
-		return invalid, err
+		return types.InvalidTernary, err
 	}
 	switch {
 	case !mbTrue && !mbFalse:
-		return invalid, fmt.Errorf("value %v may neither be truthy nor falsey", v)
+		return types.InvalidTernary, fmt.Errorf("value %v may neither be truthy nor falsey", v)
 	case mbTrue && !mbFalse:
-		return True, nil
+		return types.True, nil
 	case !mbTrue && mbFalse:
-		return False, nil
+		return types.False, nil
 	default:
-		return Maybe, nil
+		return types.Maybe, nil
 	}
+}
+
+func IsUncertain(v types.Value) bool {
+	_, ok := v.(types.Unknown)
+	return ok
 }

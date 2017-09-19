@@ -21,7 +21,6 @@ func (b Bool) AtomEquals(other types.Atom) bool {
 }
 
 func (b Bool) Falsey() bool     { return !bool(b) }
-func (b Bool) Uncertain() bool  { return false }
 func (_ Bool) TypeName() string { return "bool" }
 
 func (b Bool) String() string {
@@ -48,8 +47,7 @@ func (i Identifier) Eval(e types.Env) (types.Value, error) {
 	return val, nil
 }
 
-func (_ Identifier) Falsey() bool    { return false }
-func (_ Identifier) Uncertain() bool { return false }
+func (_ Identifier) Falsey() bool { return false }
 
 func (i Identifier) AtomEquals(other types.Atom) bool {
 	o, ok := other.(Identifier)
@@ -71,8 +69,7 @@ func (i Integer) String() string {
 
 func (i Integer) Eval(_ types.Env) (types.Value, error) { return i, nil }
 
-func (i Integer) Falsey() bool    { return i == 0 }
-func (i Integer) Uncertain() bool { return false }
+func (i Integer) Falsey() bool { return i == 0 }
 
 func (_ Integer) TypeName() string { return "integer" }
 
@@ -93,13 +90,11 @@ func (s String) String() string {
 func (s String) Eval(_ types.Env) (types.Value, error) { return s, nil }
 
 func (s String) Falsey() bool     { return s == "" }
-func (s String) Uncertain() bool  { return false }
 func (_ String) TypeName() string { return "string" }
 
 type NilValue struct{}
 
 func (_ NilValue) Falsey() bool                          { return true }
-func (_ NilValue) Uncertain() bool                       { return false }
 func (_ NilValue) String() string                        { return "nil" }
 func (v NilValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
 func (v NilValue) AtomEquals(other types.Atom) bool {
@@ -126,6 +121,11 @@ func Cons(a, b types.Value) *ConsValue {
 		b = NilValue{}
 	}
 	return &ConsValue{a, b}
+}
+
+func IsCons(v types.Value) bool {
+	_, ok := v.(*ConsValue)
+	return ok
 }
 
 func Car(v types.Value) (types.Value, error) {
@@ -238,9 +238,6 @@ func (c *ConsValue) asProperList() ([]types.Value, bool) {
 
 func (_ *ConsValue) TypeName() string { return "cons" }
 func (c *ConsValue) Falsey() bool     { return false }
-func (c *ConsValue) Uncertain() bool {
-	return c.car.Uncertain() || c.cdr.Uncertain()
-}
 func (c *ConsValue) String() string {
 	xs := []string{}
 
@@ -328,8 +325,7 @@ func (f *BuiltinFunctionValue) String() string {
 }
 func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
-func (f *BuiltinFunctionValue) Falsey() bool    { return false }
-func (f *BuiltinFunctionValue) Uncertain() bool { return false }
+func (f *BuiltinFunctionValue) Falsey() bool { return false }
 
 func IntegerValue(v types.Value) (int64, error) {
 	rv, ok := v.(Integer)
@@ -441,4 +437,64 @@ func AtomEquals(a, b types.Value) bool {
 	av, aok := a.(types.Atom)
 	bv, bok := b.(types.Atom)
 	return aok && bok && av.AtomEquals(bv)
+}
+
+func ternaryAnd(a, b types.TernaryTruthValue) types.TernaryTruthValue {
+	switch {
+	case a == types.False || b == types.False:
+		return types.False
+	case a == types.True && b == types.True:
+		return types.True
+	default:
+		return types.Maybe
+	}
+}
+
+func Equals(a, b types.Value) (types.TernaryTruthValue, error) {
+	if AtomEquals(a, b) {
+		return types.True, nil
+	}
+
+	if IsCons(a) && IsCons(b) {
+		ac := a.(*ConsValue)
+		bc := b.(*ConsValue)
+		tv1, err := Equals(ac.car, bc.car)
+		if err != nil {
+			return types.InvalidTernary, err
+		}
+		if tv1 == types.False {
+			return types.False, nil
+		}
+		tv2, err := Equals(ac.cdr, bc.cdr)
+		if err != nil {
+			return types.InvalidTernary, err
+		}
+		return ternaryAnd(tv1, tv2), nil
+	}
+
+	unkA, okA := a.(types.Unknown)
+	if okA {
+		ok, err := unkA.Intersects(b)
+		if err != nil {
+			return types.InvalidTernary, err
+		}
+		if ok {
+			return types.Maybe, nil
+		}
+		return types.False, nil
+	}
+
+	unkB, okB := b.(types.Unknown)
+	if okB {
+		ok, err := unkB.Intersects(a)
+		if err != nil {
+			return types.InvalidTernary, err
+		}
+		if ok {
+			return types.Maybe, nil
+		}
+		return types.False, nil
+	}
+
+	return types.False, nil
 }

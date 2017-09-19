@@ -120,7 +120,7 @@ func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 	}
 
 	switch tv {
-	case unknown.Maybe:
+	case types.Maybe:
 		thenVal, err := thenClause.Eval(e)
 		if err != nil {
 			return nil, err
@@ -133,9 +133,9 @@ func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 		return unknown.NewMaybeAnyOf([]types.Value{
 			thenVal, elseVal,
 		})
-	case unknown.True:
+	case types.True:
 		return thenClause.Eval(e)
-	case unknown.False:
+	case types.False:
 		return elseClause.Eval(e)
 	}
 	return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
@@ -315,9 +315,9 @@ func (i andSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 			return nil, err
 		}
 		switch truth {
-		case unknown.True:
+		case types.True:
 			break
-		case unknown.False:
+		case types.False:
 			return expr.FalseValue, nil
 		default:
 			knownToMaybeBeFalse = true
@@ -351,9 +351,9 @@ func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 			return nil, err
 		}
 		switch truth {
-		case unknown.True:
+		case types.True:
 			return expr.TrueValue, nil
-		case unknown.False:
+		case types.False:
 			break
 		default:
 			knownToMaybeBeTrue = true
@@ -451,8 +451,24 @@ func BindDefaults(e types.Env) {
 		return nil, fmt.Errorf("assertion failed: %q != %q", s, srep)
 	})
 
-	Unary(e, "_unknown?", func(a types.Value) (types.Value, error) {
-		return expr.Bool(a.Uncertain()), nil
+	Unary(e, "_uncertain?", func(a types.Value) (types.Value, error) {
+		return expr.Bool(unknown.IsUncertain(a)), nil
+	})
+
+	Binary(e, "equals?", func(a, b types.Value) (types.Value, error) {
+		tv, err := expr.Equals(a, b)
+		if err != nil {
+			return nil, err
+		}
+		switch tv {
+		case types.False:
+			return expr.FalseValue, nil
+		case types.True:
+			return expr.TrueValue, nil
+		case types.Maybe:
+			return unknown.MaybeValue, nil
+		}
+		panic("impossible")
 	})
 
 	Binary(e, "cons", func(a, b types.Value) (types.Value, error) {
@@ -473,11 +489,11 @@ func BindDefaults(e types.Env) {
 			return nil, err
 		}
 		switch val {
-		case unknown.False:
+		case types.False:
 			return expr.TrueValue, nil
-		case unknown.True:
+		case types.True:
 			return expr.FalseValue, nil
-		case unknown.Maybe:
+		case types.Maybe:
 			return unknown.MaybeValue, nil
 		}
 		return nil, errors.New("impossible state: ternary truth value neither true, false, or maybe")
