@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -22,12 +21,7 @@ var (
 )
 
 func mainCoreExecuteScript(filename string) error {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-
-	value, err := code.Run(builtin.NewRootEnv(), filename, data)
+	value, err := code.RunFile(builtin.NewRootEnv(), filename)
 	if err != nil {
 		return err
 	}
