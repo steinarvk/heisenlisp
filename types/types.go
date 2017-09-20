@@ -28,21 +28,26 @@ type Atom interface {
 type SpecialForm interface {
 	Value
 	Execute(Env, []Value) (Value, error)
+	IsPure() bool
 }
 
 type Macro interface {
 	Value
 	Expand([]Value) (Value, error)
+	IsPure() bool
 }
 
 type Callable interface {
 	Value
 	Call([]Value) (Value, error)
+	IsPure() bool
 }
 
 type Env interface {
 	Bind(k string, v Value)
 	Lookup(k string) (Value, bool)
+	MarkPure()
+	IsInPureContext() bool
 }
 
 type Numeric interface {

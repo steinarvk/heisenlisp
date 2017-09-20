@@ -277,11 +277,18 @@ func (c *ConsValue) Eval(e types.Env) (types.Value, error) {
 
 	specialForm, ok := funcVal.(types.SpecialForm)
 	if ok {
+		if !specialForm.IsPure() && e.IsInPureContext() {
+			return nil, errors.New("impure call in pure context")
+		}
 		return specialForm.Execute(e, unevaluatedParams)
 	}
 
 	macro, ok := funcVal.(types.Macro)
 	if ok {
+		if !macro.IsPure() && e.IsInPureContext() {
+			return nil, errors.New("impure call in pure context")
+		}
+
 		newForm, err := macro.Expand(unevaluatedParams)
 		if err != nil {
 			return nil, err
@@ -292,6 +299,9 @@ func (c *ConsValue) Eval(e types.Env) (types.Value, error) {
 	callable, ok := funcVal.(types.Callable)
 	if !ok {
 		return nil, fmt.Errorf("%q (%v) is not callable", l[0], funcVal)
+	}
+	if !callable.IsPure() && e.IsInPureContext() {
+		return nil, errors.New("impure call in pure context")
 	}
 
 	var params []types.Value
@@ -309,11 +319,14 @@ func (c *ConsValue) Eval(e types.Env) (types.Value, error) {
 type BuiltinFunctionValue struct {
 	name     string
 	function func([]types.Value) (types.Value, error)
+	pure     bool
 }
 
-func NewBuiltinFunction(name string, f func([]types.Value) (types.Value, error)) *BuiltinFunctionValue {
-	return &BuiltinFunctionValue{name, f}
+func NewBuiltinFunction(name string, pure bool, f func([]types.Value) (types.Value, error)) *BuiltinFunctionValue {
+	return &BuiltinFunctionValue{name, f, pure}
 }
+
+func (f *BuiltinFunctionValue) IsPure() bool { return f.pure }
 
 func (_ *BuiltinFunctionValue) TypeName() string { return "function" }
 func (f *BuiltinFunctionValue) Call(params []types.Value) (types.Value, error) {

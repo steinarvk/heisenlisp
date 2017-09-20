@@ -3,15 +3,28 @@ package env
 import "github.com/steinarvk/heisenlisp/types"
 
 type env struct {
-	parent   types.Env
-	bindings map[string]types.Value
+	parent      types.Env
+	bindings    map[string]types.Value
+	pureContext bool
 }
 
 func New(parent types.Env) types.Env {
-	return &env{
+	rv := &env{
 		parent:   parent,
 		bindings: map[string]types.Value{},
 	}
+	if parent != nil && parent.IsInPureContext() {
+		rv.pureContext = true
+	}
+	return rv
+}
+
+func (e *env) MarkPure() {
+	e.pureContext = true
+}
+
+func (e *env) IsInPureContext() bool {
+	return e.pureContext
 }
 
 func (e *env) Bind(k string, v types.Value) {

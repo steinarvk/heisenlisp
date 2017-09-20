@@ -10,11 +10,16 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+func NameIsPure(s string) bool {
+	return !strings.HasSuffix(s, "!")
+}
+
 type FunctionValue struct {
 	name       string
 	lexicalEnv types.Env
 	lambdaList *lambdaList
 	body       []types.Value
+	pure       bool
 }
 
 type MacroValue struct {
@@ -22,6 +27,7 @@ type MacroValue struct {
 	lexicalEnv types.Env
 	lambdaList *lambdaList
 	body       []types.Value
+	pure       bool
 }
 
 type namedValue struct {
@@ -47,7 +53,7 @@ func (l *lambdaList) maxArgs() (int, bool) {
 	return len(l.requiredArgs) + len(l.optionalArgs), true
 }
 
-func (l *lambdaList) bindArgs(e types.Env, params []types.Value) (types.Env, error) {
+func (l *lambdaList) bindArgs(e types.Env, params []types.Value, pure bool) (types.Env, error) {
 	if min := l.minArgs(); len(params) < min {
 		return nil, fmt.Errorf("too few params (want %d got %d)", min, len(params))
 	}
@@ -57,6 +63,9 @@ func (l *lambdaList) bindArgs(e types.Env, params []types.Value) (types.Env, err
 	}
 
 	e = env.New(e)
+	if pure {
+		e.MarkPure()
+	}
 
 	for _, reqArgName := range l.requiredArgs {
 		e.Bind(reqArgName, params[0])
@@ -169,7 +178,16 @@ func New(env types.Env, name string, formalParams types.Value, body []types.Valu
 	if err != nil {
 		return nil, fmt.Errorf("invalid lambda list: %v", err)
 	}
-	return &FunctionValue{name, env, ll, body}, nil
+	rv := &FunctionValue{
+		name:       name,
+		lexicalEnv: env,
+		lambdaList: ll,
+		body:       body,
+	}
+	if NameIsPure(name) {
+		rv.pure = true
+	}
+	return rv, nil
 }
 
 func NewMacro(env types.Env, name string, formalParams types.Value, body []types.Value) (*MacroValue, error) {
@@ -177,7 +195,16 @@ func NewMacro(env types.Env, name string, formalParams types.Value, body []types
 	if err != nil {
 		return nil, fmt.Errorf("invalid lambda list: %v", err)
 	}
-	return &MacroValue{name, env, ll, body}, nil
+	rv := &MacroValue{
+		name:       name,
+		lexicalEnv: env,
+		lambdaList: ll,
+		body:       body,
+	}
+	if NameIsPure(name) {
+		rv.pure = true
+	}
+	return rv, nil
 }
 
 func (_ *FunctionValue) TypeName() string { return "function" }
@@ -192,7 +219,7 @@ func (f *FunctionValue) Call(params []types.Value) (types.Value, error) {
 	var rv types.Value
 	var err error
 
-	env, err := f.lambdaList.bindArgs(f.lexicalEnv, params)
+	env, err := f.lambdaList.bindArgs(f.lexicalEnv, params, f.pure)
 	if err != nil {
 		return nil, fmt.Errorf("%s%v", f.errorprefix(), err)
 	}
@@ -214,6 +241,10 @@ func (f *FunctionValue) String() string {
 }
 func (f *FunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
+func (f *FunctionValue) IsPure() bool {
+	return f.pure
+}
+
 func (f *FunctionValue) Falsey() bool { return false }
 
 func (_ *MacroValue) TypeName() string { return "macro" }
@@ -228,7 +259,7 @@ func (f *MacroValue) Expand(params []types.Value) (types.Value, error) {
 	var rv types.Value
 	var err error
 
-	env, err := f.lambdaList.bindArgs(f.lexicalEnv, params)
+	env, err := f.lambdaList.bindArgs(f.lexicalEnv, params, f.pure)
 	if err != nil {
 		return nil, fmt.Errorf("%s%v", f.errorprefix(), err)
 	}
@@ -240,6 +271,10 @@ func (f *MacroValue) Expand(params []types.Value) (types.Value, error) {
 		}
 	}
 	return rv, nil
+}
+
+func (f *MacroValue) IsPure() bool {
+	return f.pure
 }
 
 func (f *MacroValue) String() string {
