@@ -1,0 +1,15 @@
+(defun! even? (n) (= 0 (mod n 2)))
+
+(defun! odd? (n) (not (even? n)))
+
+(_assert! "true" (any? even? (list 1 2 3 4 5)))
+(_assert! "false" (any? even? (list 1 3 5)))
+(_assert! "maybe" (any? even? (list 1 3 (any-of 4 7) 5)))
+(_assert! "true" (any? even? (list 1 3 (any-of 4 8) 5)))
+(_assert! "false" (any? even? (list)))
+
+(_assert! "true" (all? odd? (list 1 3 5)))
+(_assert! "false" (all? odd? (list 1 3 4 5)))
+(_assert! "maybe" (all? odd? (list 1 3 (any-of 4 7) 5)))
+(_assert! "true" (all? odd? (list 1 3 (any-of 3 7) 5)))
+(_assert! "true" (all? even? (list)))

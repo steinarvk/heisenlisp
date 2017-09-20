@@ -174,6 +174,11 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(may? (or maybe maybe))`,
 		`(must? (or maybe true))`,
 		`(not (must? (or maybe maybe)))`,
+		`(any? (lambda (x) (= x 2)) (list 1 2 3))`,
+		`(not (all? (lambda (x) (= x 2)) (list 1 2 3)))`,
+		`(all? (lambda (x) (= x 2)) (list 2))`,
+		`(all? (lambda (x) (and (= x 3) (= x 2))) (list))`,
+		`(not (any? (lambda (x) (and (= x 3) (= x 2))) (list)))`,
 	}
 
 	for i, s := range exprs {

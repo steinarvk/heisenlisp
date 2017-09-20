@@ -545,12 +545,88 @@ func BindDefaults(e types.Env) {
 		return expr.WrapList(rv), nil
 	})
 
-	Ternary(e, "reduce-left", func(f, initial, l types.Value) (types.Value, error) {
+	Binary(e, "any?", func(f, l types.Value) (types.Value, error) {
+		xs, err := expr.UnwrapList(l)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(xs) == 0 {
+			return expr.FalseValue, nil
+		}
+
 		callable, ok := f.(types.Callable)
 		if !ok {
 			return nil, errors.New("not a callable")
 		}
 
+		sawMaybe := false
+
+		for _, x := range xs {
+			result, err := callable.Call([]types.Value{x})
+			if err != nil {
+				return nil, err
+			}
+			tv, err := unknown.TruthValue(result)
+			if err != nil {
+				return nil, err
+			}
+			switch tv {
+			case types.True:
+				return expr.TrueValue, nil
+			case types.Maybe:
+				sawMaybe = true
+			}
+		}
+
+		if sawMaybe {
+			return unknown.MaybeValue, nil
+		}
+		return expr.FalseValue, nil
+	})
+
+	Binary(e, "all?", func(f, l types.Value) (types.Value, error) {
+		xs, err := expr.UnwrapList(l)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(xs) == 0 {
+			return expr.TrueValue, nil
+		}
+
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, errors.New("not a callable")
+		}
+
+		sawMaybe := false
+
+		for _, x := range xs {
+			result, err := callable.Call([]types.Value{x})
+			if err != nil {
+				return nil, err
+			}
+			tv, err := unknown.TruthValue(result)
+			if err != nil {
+				return nil, err
+			}
+			switch tv {
+			case types.False:
+				return expr.FalseValue, nil
+			case types.Maybe:
+				sawMaybe = true
+			}
+		}
+
+		if sawMaybe {
+			return unknown.MaybeValue, nil
+		}
+
+		return expr.TrueValue, nil
+	})
+
+	Ternary(e, "reduce-left", func(f, initial, l types.Value) (types.Value, error) {
 		xs, err := expr.UnwrapList(l)
 		if err != nil {
 			return nil, err
@@ -562,6 +638,11 @@ func BindDefaults(e types.Env) {
 
 		if len(xs) == 1 {
 			return xs[0], nil
+		}
+
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, errors.New("not a callable")
 		}
 
 		reduced, err := callable.Call([]types.Value{xs[0], xs[1]})
