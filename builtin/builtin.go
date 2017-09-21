@@ -671,6 +671,18 @@ func BindDefaults(e types.Env) {
 		return reduced, nil
 	})
 
+	Values(e, "trace", func(xs []types.Value) (types.Value, error) {
+		// print function for debugging; really not a pure func
+		var printsections []string
+		var rv types.Value
+		for _, x := range xs {
+			printsections = append(printsections, x.String())
+			rv = x
+		}
+		log.Printf("trace: %s", strings.Join(printsections, " "))
+		return rv, nil
+	})
+
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
 		return unknown.NewMaybeAnyOf(xs)
 	})
