@@ -14,6 +14,7 @@ import (
 
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
+	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/types"
 
 	"github.com/steinarvk/heisenlisp/gen/parser"
@@ -48,6 +49,14 @@ func mainCoreREPL() error {
 	defer reader.Close()
 
 	root := builtin.NewRootEnv()
+
+	builtin.Unary(root, "_load-file!", func(a types.Value) (types.Value, error) {
+		s, err := expr.StringValue(a)
+		if err != nil {
+			return nil, err
+		}
+		return code.RunFile(root, s)
+	})
 
 	for {
 		text, err := reader.Readline()
