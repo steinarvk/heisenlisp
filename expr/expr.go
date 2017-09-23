@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/value/integer"
 )
 
 type Bool bool
@@ -55,26 +56,6 @@ func (i Identifier) AtomEquals(other types.Atom) bool {
 }
 
 func (_ Identifier) TypeName() string { return "symbol" }
-
-type Integer int64
-
-func (i Integer) AtomEquals(other types.Atom) bool {
-	o, ok := other.(Integer)
-	return ok && o == i
-}
-
-func (i Integer) String() string {
-	return fmt.Sprintf("%d", i)
-}
-
-func (i Integer) Eval(_ types.Env) (types.Value, error) { return i, nil }
-
-func (i Integer) Falsey() bool { return i == 0 }
-
-func (_ Integer) TypeName() string { return "integer" }
-
-func (i Integer) AsInt64() (int64, bool)    { return int64(i), true }
-func (i Integer) AsDouble() (float64, bool) { return float64(i), true }
 
 type String string
 
@@ -341,11 +322,7 @@ func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f
 func (f *BuiltinFunctionValue) Falsey() bool { return false }
 
 func IntegerValue(v types.Value) (int64, error) {
-	rv, ok := v.(Integer)
-	if !ok {
-		return 0, errors.New("not an integer")
-	}
-	return int64(rv), nil
+	return integer.ToInt64(v)
 }
 
 func StringValue(v types.Value) (string, error) {

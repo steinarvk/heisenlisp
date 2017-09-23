@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
+	"github.com/steinarvk/heisenlisp/value/integer"
 )
 
 func wrapBinary(a, b types.Value, f func(a, b types.Value) (types.Value, error)) (types.Value, error) {
@@ -66,7 +66,7 @@ func toBinaryInt64(f func(int64, int64) (types.Value, error)) func(types.Value, 
 }
 
 func fromInt64(n int64) types.Value {
-	return expr.Integer(n)
+	return integer.FromInt64(n)
 }
 
 func BinaryPlus(a, b types.Value) (types.Value, error) {

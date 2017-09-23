@@ -16,6 +16,7 @@ import (
 	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
+	"github.com/steinarvk/heisenlisp/value/integer"
 )
 
 var (
@@ -514,7 +515,7 @@ func BindDefaults(e types.Env) {
 		if err != nil {
 			return nil, err
 		}
-		return expr.Integer(len(xs)), nil
+		return integer.FromInt(len(xs)), nil
 	})
 
 	Binary(e, "apply", func(f, args types.Value) (types.Value, error) {
@@ -696,14 +697,14 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "range", func(v types.Value) (types.Value, error) {
-		n, err := expr.IntegerValue(v)
+		n, err := integer.ToInt64(v)
 		if err != nil {
 			return nil, err
 		}
 
 		var xs []types.Value
 		for i := int64(0); i < n; i++ {
-			xs = append(xs, expr.Integer(i))
+			xs = append(xs, integer.FromInt64(i))
 		}
 		return expr.WrapList(xs), nil
 	})
