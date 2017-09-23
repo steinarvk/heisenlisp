@@ -350,3 +350,86 @@ func TestExamples(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkTuringBinaryCounter20(b *testing.B) {
+	turingSetupCode := []byte(`
+(defun! remove-top (tape)
+  (if (nil? tape)
+      nil
+      (cdr tape)))
+
+(defun! get-top (tape)
+  (if (nil? tape)
+      nil
+      (car tape)))
+
+(defun! move-left (left-tape current right-tape)
+  (list (remove-top left-tape)
+        (get-top left-tape)
+        (cons current right-tape)))
+
+(defun! move-right (left-tape current right-tape)
+  (list (cons current left-tape)
+        (get-top right-tape)
+        (remove-top right-tape)))
+
+(set! do-not-move list)
+
+(defun! compute-turing (left-tape current right-tape state table-func)
+  (let ((recurse (lambda (new-symbol movement new-state)
+                    (let ((current new-symbol))
+                      (let ((next-tape-states (movement left-tape current right-tape)))
+                        (if (_atom-eq? new-state 'stop)
+                            next-tape-states
+                            (let ((left-tape (first next-tape-states))
+                                  (current (second next-tape-states))
+                                  (right-tape (third next-tape-states)))
+                              (compute-turing left-tape current right-tape new-state table-func))))))))
+    (let ((decision (table-func state current)))
+      (let ((new-symbol (first decision))
+            (move-func (second decision))
+            (new-state (third decision)))
+        (recurse new-symbol move-func new-state)))))
+
+(defun! binary-counter-table (state sym)
+  (cond
+    ((and (= state 0) (= sym nil)) (list nil move-right 1))
+    ((and (= state 0) (= sym 0))   (list 0 move-left 0))
+    ((and (= state 0) (= sym 1))   (list 1 move-left 0))
+
+    ((and (= state 1) (= sym nil)) (list 1 move-left 2))
+    ((and (= state 1) (= sym 0))   (list 1 move-right 2))
+    ((and (= state 1) (= sym 1))   (list 0 move-right 1))
+
+    ((and (= state 2) (= sym nil)) (list nil move-right 'stop))
+    ((and (= state 2) (= sym 0))   (list 0 move-left 2))
+    ((and (= state 2) (= sym 1))   (list 1 move-left 2))
+    (true (call-nonexistent-function-to-fail))))
+
+(defun! turing-inc (xs) (compute-turing (first xs) (second xs) (third xs) 0 binary-counter-table))
+
+(defun! turing-inc-n (n xs) (if (= 0 n) xs (turing-inc-n (dec n) (turing-inc xs))))
+
+(defun! align-tape (xs)
+  (if (and (nil? (second xs)) (nil? (third xs)))
+      (first xs)
+      (align-tape (move-right (first xs) (second xs) (third xs)))))
+
+(defun! turing-integer-to-binary (n) (align-tape (turing-inc-n n (list nil nil nil))))
+`)
+	root := builtin.NewRootEnv()
+	_, err := code.Run(root, "<benchmark setup code>", turingSetupCode)
+	if err != nil {
+		b.Fatalf("failed to set up benchmark code: %v", err)
+	}
+
+	turingCode := []byte("(turing-integer-to-binary 20)")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<turing benchmark code>", turingCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", turingCode, err)
+		}
+	}
+}
