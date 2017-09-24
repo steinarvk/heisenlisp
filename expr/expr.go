@@ -12,30 +12,6 @@ import (
 	"github.com/steinarvk/heisenlisp/value/symbol"
 )
 
-type Bool bool
-
-var (
-	TrueValue  = Bool(true)
-	FalseValue = Bool(false)
-)
-
-func (b Bool) AtomEquals(other types.Atom) bool {
-	o, ok := other.(Bool)
-	return ok && o == b
-}
-
-func (b Bool) Falsey() bool     { return !bool(b) }
-func (_ Bool) TypeName() string { return "bool" }
-
-func (b Bool) String() string {
-	if bool(b) {
-		return "true"
-	}
-	return "false"
-}
-
-func (b Bool) Eval(_ types.Env) (types.Value, error) { return b, nil }
-
 func IsNil(v types.Value) bool {
 	return null.IsNil(v)
 }

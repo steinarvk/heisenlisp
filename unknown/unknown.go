@@ -7,6 +7,7 @@ import (
 
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/value/boolean"
 )
 
 const (
@@ -38,15 +39,18 @@ func (a anyOf) isMaybe() bool {
 	if len(a.vals) != 2 {
 		return false
 	}
-	val1, ok1 := a.vals[0].(expr.Bool)
-	val2, ok2 := a.vals[1].(expr.Bool)
-	if !ok1 || !ok2 {
+	val1, err := boolean.ToBool(a.vals[0])
+	if err != nil {
 		return false
 	}
-	if val1 == expr.Bool(true) && val2 == expr.Bool(false) {
+	val2, err := boolean.ToBool(a.vals[1])
+	if err != nil {
+		return false
+	}
+	if val1 == true && val2 == false {
 		return true
 	}
-	return val1 == expr.Bool(false) && val2 == expr.Bool(true)
+	return val1 == false && val2 == true
 }
 
 func (a anyOf) String() string {
@@ -143,7 +147,7 @@ func NewAnyOf(xs []types.Value) types.Value {
 
 var (
 	MaybeValue = NewMaybeAnyOfOrPanic([]types.Value{
-		expr.TrueValue, expr.FalseValue,
+		boolean.True, boolean.False,
 	})
 )
 

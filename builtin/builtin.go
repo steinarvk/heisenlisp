@@ -16,6 +16,7 @@ import (
 	"github.com/steinarvk/heisenlisp/purity"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
+	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/function"
 	"github.com/steinarvk/heisenlisp/value/integer"
@@ -299,7 +300,7 @@ func (i andSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		case types.True:
 			break
 		case types.False:
-			return expr.FalseValue, nil
+			return boolean.False, nil
 		default:
 			knownToMaybeBeFalse = true
 		}
@@ -309,7 +310,7 @@ func (i andSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		return unknown.MaybeValue, nil
 	}
 
-	return expr.TrueValue, nil
+	return boolean.True, nil
 }
 
 type orSpecialForm struct{}
@@ -333,7 +334,7 @@ func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 		}
 		switch truth {
 		case types.True:
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		case types.False:
 			break
 		default:
@@ -345,7 +346,7 @@ func (i orSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 		return unknown.MaybeValue, nil
 	}
 
-	return expr.FalseValue, nil
+	return boolean.False, nil
 }
 
 type lambdaSpecialForm struct{}
@@ -390,18 +391,18 @@ func BindDefaults(e types.Env) {
 	e.Bind("or", &orSpecialForm{})
 
 	e.Bind("nil", null.Nil)
-	e.Bind("true", expr.TrueValue)
-	e.Bind("false", expr.FalseValue)
+	e.Bind("true", boolean.True)
+	e.Bind("false", boolean.False)
 	e.Bind("maybe", unknown.MaybeValue)
 	e.Bind("unknown", unknown.FullyUnknown{})
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)
-		return expr.Bool(ok), nil
+		return boolean.FromBool(ok), nil
 	})
 
 	Binary(e, "_atom-eq?", func(a, b types.Value) (types.Value, error) {
-		return expr.Bool(expr.AtomEquals(a, b)), nil
+		return boolean.FromBool(expr.AtomEquals(a, b)), nil
 	})
 
 	Unary(e, "_type", func(a types.Value) (types.Value, error) {
@@ -425,7 +426,7 @@ func BindDefaults(e types.Env) {
 			if Verbose {
 				log.Printf("PASS: %q == %q", s, srep)
 			}
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		}
 
 		if Verbose {
@@ -435,7 +436,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "_uncertain?", func(a types.Value) (types.Value, error) {
-		return expr.Bool(unknown.IsUncertain(a)), nil
+		return boolean.FromBool(unknown.IsUncertain(a)), nil
 	})
 
 	checkEquality := func(a, b types.Value) (types.Value, error) {
@@ -449,9 +450,9 @@ func BindDefaults(e types.Env) {
 		}
 		switch tv {
 		case types.False:
-			return expr.FalseValue, nil
+			return boolean.False, nil
 		case types.True:
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		case types.Maybe:
 			return unknown.MaybeValue, nil
 		}
@@ -480,9 +481,9 @@ func BindDefaults(e types.Env) {
 		}
 		switch val {
 		case types.False:
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		case types.True:
-			return expr.FalseValue, nil
+			return boolean.False, nil
 		case types.Maybe:
 			return unknown.MaybeValue, nil
 		}
@@ -496,9 +497,9 @@ func BindDefaults(e types.Env) {
 		}
 		switch val {
 		case types.False:
-			return expr.FalseValue, nil
+			return boolean.False, nil
 		default:
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		}
 	})
 
@@ -509,9 +510,9 @@ func BindDefaults(e types.Env) {
 		}
 		switch val {
 		case types.True:
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		default:
-			return expr.FalseValue, nil
+			return boolean.False, nil
 		}
 	})
 
@@ -568,7 +569,7 @@ func BindDefaults(e types.Env) {
 		}
 
 		if len(xs) == 0 {
-			return expr.FalseValue, nil
+			return boolean.False, nil
 		}
 
 		callable, ok := f.(types.Callable)
@@ -589,7 +590,7 @@ func BindDefaults(e types.Env) {
 			}
 			switch tv {
 			case types.True:
-				return expr.TrueValue, nil
+				return boolean.True, nil
 			case types.Maybe:
 				sawMaybe = true
 			}
@@ -598,7 +599,7 @@ func BindDefaults(e types.Env) {
 		if sawMaybe {
 			return unknown.MaybeValue, nil
 		}
-		return expr.FalseValue, nil
+		return boolean.False, nil
 	})
 
 	Binary(e, "all?", func(f, l types.Value) (types.Value, error) {
@@ -608,7 +609,7 @@ func BindDefaults(e types.Env) {
 		}
 
 		if len(xs) == 0 {
-			return expr.TrueValue, nil
+			return boolean.True, nil
 		}
 
 		callable, ok := f.(types.Callable)
@@ -629,7 +630,7 @@ func BindDefaults(e types.Env) {
 			}
 			switch tv {
 			case types.False:
-				return expr.FalseValue, nil
+				return boolean.False, nil
 			case types.Maybe:
 				sawMaybe = true
 			}
@@ -639,7 +640,7 @@ func BindDefaults(e types.Env) {
 			return unknown.MaybeValue, nil
 		}
 
-		return expr.TrueValue, nil
+		return boolean.True, nil
 	})
 
 	Ternary(e, "reduce-left", func(f, initial, l types.Value) (types.Value, error) {
