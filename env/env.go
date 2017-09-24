@@ -21,20 +21,11 @@ var (
 			Help:      "Values bound in environments",
 		},
 	)
-
-	metricEnvValueLookups = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: "hlisp",
-			Name:      "new_env_value_lookups",
-			Help:      "Values looked up in environments",
-		},
-	)
 )
 
 func init() {
 	prometheus.MustRegister(metricNewEnvironments)
 	prometheus.MustRegister(metricEnvValueBinds)
-	prometheus.MustRegister(metricEnvValueLookups)
 }
 
 type env struct {
@@ -69,7 +60,6 @@ func (e *env) Bind(k string, v types.Value) {
 }
 
 func (e *env) Lookup(k string) (types.Value, bool) {
-	metricEnvValueLookups.Inc()
 	rv, ok := e.bindings[k]
 	if ok {
 		return rv, true
