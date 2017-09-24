@@ -2,6 +2,7 @@
 
 (defun! + (&rest xs) (reduce-left low-level-plus 0 xs))
 (defun! * (&rest xs) (reduce-left low-level-multiply 1 xs))
+(defun! / (numerator &rest denominators) (low-level-divide numerator (apply * denominators)))
 
 (defun! negate (x) (* -1 x))
 

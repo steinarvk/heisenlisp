@@ -1,0 +1,36 @@
+package real
+
+import (
+	"fmt"
+
+	"github.com/steinarvk/heisenlisp/types"
+)
+
+type realValue float64
+
+func (v realValue) AtomEquals(other types.Atom) bool {
+	o, ok := other.(realValue)
+	return ok && o == v
+}
+
+func (v realValue) String() string {
+	return fmt.Sprintf("%f", float64(v))
+}
+
+func (v realValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
+
+func (v realValue) Falsey() bool { return v == 0 }
+
+func (v realValue) TypeName() string { return "floating-point" }
+
+func (v realValue) AsInt64() (int64, bool) {
+	return 0, false
+}
+
+func (v realValue) AsDouble() (float64, bool) {
+	return float64(v), true
+}
+
+func FromFloat64(x float64) types.Value {
+	return realValue(x)
+}

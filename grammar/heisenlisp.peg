@@ -15,6 +15,7 @@
 
   	"github.com/steinarvk/heisenlisp/value/integer"
   	"github.com/steinarvk/heisenlisp/value/str"
+  	"github.com/steinarvk/heisenlisp/value/real"
   	"github.com/steinarvk/heisenlisp/types"
     "github.com/steinarvk/heisenlisp/unknown"
   
@@ -34,6 +35,7 @@ Expr <- (
     ListExpr
   / String
   / QuotingExpr
+  / Real
   / Integer
   / Identifier
   / Unknown
@@ -67,6 +69,14 @@ String <- '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
     return nil, err
   }
   return str.New(s), nil
+}
+
+Real <- ( '-'? [0-9] [0-9]* '.' [0-9]* ) {
+  x, err := strconv.ParseFloat(string(c.text), 64)
+  if err != nil {
+    return nil, err
+  }
+  return real.FromFloat64(x), nil
 }
 
 Integer <- ( "0" / '-'? [1-9] [0-9]* ) {

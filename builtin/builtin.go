@@ -733,6 +733,7 @@ func BindDefaults(e types.Env) {
 	Binary(e, "low-level-plus", numerics.BinaryPlus)
 	Binary(e, "low-level-minus", numerics.BinaryMinus)
 	Binary(e, "low-level-multiply", numerics.BinaryMultiply)
+	Binary(e, "low-level-divide", numerics.BinaryDivision)
 	Binary(e, "mod", numerics.Mod)
 }
 

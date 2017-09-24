@@ -180,6 +180,7 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(all? (lambda (x) (= x 2)) (list 2))`,
 		`(all? (lambda (x) (and (= x 3) (= x 2))) (list))`,
 		`(not (any? (lambda (x) (and (= x 3) (= x 2))) (list)))`,
+		`(= (/ 4 2) (/ 8 4))`,
 	}
 
 	for i, s := range exprs {
