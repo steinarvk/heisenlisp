@@ -5,9 +5,24 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/null"
 )
+
+var (
+	metricNewCons = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "new_cons",
+			Help:      "New cons values created",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(metricNewCons)
+}
 
 var (
 	notACons       = errors.New("not a cons")
@@ -62,6 +77,8 @@ func New(car, cdr types.Value) *consValue {
 	if cdr == nil {
 		cdr = null.Nil
 	}
+
+	metricNewCons.Inc()
 	return &consValue{car, cdr}
 }
 
@@ -70,6 +87,7 @@ func Decompose(v types.Value) (types.Value, types.Value, bool) {
 	if !ok {
 		return nil, nil, false
 	}
+
 	return rv.car, rv.cdr, true
 }
 

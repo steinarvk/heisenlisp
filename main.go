@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/chzyer/readline"
 	"github.com/fatih/color"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
@@ -21,8 +24,10 @@ import (
 )
 
 var (
-	script  = flag.String("script", "", "execute script in filename instead of stdin")
-	verbose = flag.Bool("verbose", false, "increase verbosity level")
+	script        = flag.String("script", "", "execute script in filename instead of stdin")
+	verbose       = flag.Bool("verbose", false, "increase verbosity level")
+	listenAddress = flag.String("listen_address", "127.0.0.1:6860", "http address on which to serve metrics")
+	metrics       = flag.Bool("metrics", true, "whether to serve metrics")
 )
 
 func mainCoreExecuteScript(filename string) error {
@@ -113,6 +118,20 @@ func main() {
 
 	if *verbose {
 		builtin.Verbose = true
+	}
+
+	if *metrics {
+		listener, err := net.Listen("tcp", *listenAddress)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		http.Handle("/metrics", promhttp.Handler())
+		log.Printf("listening on: http://%s/metrics", listener.Addr())
+		go func() {
+			// Listen forever, unless something goes wrong.
+			log.Fatal(http.Serve(listener, nil))
+		}()
 	}
 
 	if *script != "" {
