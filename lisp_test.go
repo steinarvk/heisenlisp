@@ -433,3 +433,38 @@ func BenchmarkTuringBinaryCounter20(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkNormalBinaryCounter20(b *testing.B) {
+	counterSetupCode := []byte(`
+(defun! binary-inc (xs)
+  (reversed (binary-inc-reversed (reversed xs))))
+
+(defun! binary-inc-reversed (xs)
+  (if (empty? xs)
+      (list 1)
+      (if (= 0 (car xs))
+          (cons 1 (cdr xs))
+          (cons 0 (binary-inc-reversed (cdr xs))))))
+
+(defun! unary-n-times (n f x)
+  (if (= n 0) x (unary-n-times (- n 1) f (f x))))
+
+(defun! simple-integer-to-binary (n)
+  (reversed (unary-n-times n binary-inc-reversed (list 0))))
+`)
+	root := builtin.NewRootEnv()
+	_, err := code.Run(root, "<benchmark setup code>", counterSetupCode)
+	if err != nil {
+		b.Fatalf("failed to set up benchmark code: %v", err)
+	}
+
+	turingCode := []byte("(simple-integer-to-binary 20)")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<turing benchmark code>", turingCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", turingCode, err)
+		}
+	}
+}
