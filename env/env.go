@@ -1,6 +1,41 @@
 package env
 
-import "github.com/steinarvk/heisenlisp/types"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/types"
+)
+
+var (
+	metricNewEnvironments = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "new_environments",
+			Help:      "New environments created",
+		},
+	)
+
+	metricEnvValueBinds = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "new_env_value_bindings",
+			Help:      "Values bound in environments",
+		},
+	)
+
+	metricEnvValueLookups = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "new_env_value_lookups",
+			Help:      "Values looked up in environments",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(metricNewEnvironments)
+	prometheus.MustRegister(metricEnvValueBinds)
+	prometheus.MustRegister(metricEnvValueLookups)
+}
 
 type env struct {
 	parent      types.Env
@@ -9,6 +44,7 @@ type env struct {
 }
 
 func New(parent types.Env) types.Env {
+	metricNewEnvironments.Inc()
 	rv := &env{
 		parent:   parent,
 		bindings: map[string]types.Value{},
@@ -28,10 +64,12 @@ func (e *env) IsInPureContext() bool {
 }
 
 func (e *env) Bind(k string, v types.Value) {
+	metricEnvValueBinds.Inc()
 	e.bindings[k] = v
 }
 
 func (e *env) Lookup(k string) (types.Value, bool) {
+	metricEnvValueLookups.Inc()
 	rv, ok := e.bindings[k]
 	if ok {
 		return rv, true
