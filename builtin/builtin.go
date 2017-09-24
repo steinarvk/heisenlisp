@@ -12,12 +12,14 @@ import (
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
-	"github.com/steinarvk/heisenlisp/function"
 	"github.com/steinarvk/heisenlisp/numerics"
+	"github.com/steinarvk/heisenlisp/purity"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
 	"github.com/steinarvk/heisenlisp/value/cons"
+	"github.com/steinarvk/heisenlisp/value/function"
 	"github.com/steinarvk/heisenlisp/value/integer"
+	"github.com/steinarvk/heisenlisp/value/macro"
 	"github.com/steinarvk/heisenlisp/value/null"
 	"github.com/steinarvk/heisenlisp/value/str"
 	"github.com/steinarvk/heisenlisp/value/symbol"
@@ -45,7 +47,7 @@ func Unary(e types.Env, name string, f func(a types.Value) (types.Value, error))
 		}
 		return f(vs[0])
 	}
-	e.Bind(name, expr.NewBuiltinFunction(name, function.NameIsPure(name), wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, error)) {
@@ -55,7 +57,7 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 		}
 		return f(vs[0], vs[1])
 	}
-	e.Bind(name, expr.NewBuiltinFunction(name, function.NameIsPure(name), wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value, error)) {
@@ -65,11 +67,11 @@ func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value,
 		}
 		return f(vs[0], vs[1], vs[2])
 	}
-	e.Bind(name, expr.NewBuiltinFunction(name, function.NameIsPure(name), wrap(name, checker)))
+	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Values(e types.Env, name string, f func(xs []types.Value) (types.Value, error)) {
-	e.Bind(name, expr.NewBuiltinFunction(name, function.NameIsPure(name), f))
+	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), f))
 }
 
 func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s) }
@@ -219,7 +221,7 @@ func (i defmacroSpecialForm) Execute(e types.Env, unevaluated []types.Value) (ty
 		return nil, fmt.Errorf("defmacro! name: %v", err)
 	}
 
-	macroValue, err := function.NewMacro(e, name, unevaluated[1], unevaluated[2:])
+	macroValue, err := macro.New(e, name, unevaluated[1], unevaluated[2:])
 	if err != nil {
 		return nil, err
 	}
