@@ -3,12 +3,13 @@ package expr
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/null"
+	"github.com/steinarvk/heisenlisp/value/str"
+	"github.com/steinarvk/heisenlisp/value/symbol"
 )
 
 type Bool bool
@@ -35,46 +36,6 @@ func (b Bool) String() string {
 
 func (b Bool) Eval(_ types.Env) (types.Value, error) { return b, nil }
 
-// todo rename "symbol"
-type Identifier string
-
-func (i Identifier) String() string {
-	return string(i)
-}
-
-func (i Identifier) Eval(e types.Env) (types.Value, error) {
-	val, ok := e.Lookup(string(i))
-	if !ok {
-		return nil, fmt.Errorf("no such identifier: %q", i)
-	}
-	return val, nil
-}
-
-func (_ Identifier) Falsey() bool { return false }
-
-func (i Identifier) AtomEquals(other types.Atom) bool {
-	o, ok := other.(Identifier)
-	return ok && o == i
-}
-
-func (_ Identifier) TypeName() string { return "symbol" }
-
-type String string
-
-func (s String) AtomEquals(other types.Atom) bool {
-	o, ok := other.(String)
-	return ok && o == s
-}
-
-func (s String) String() string {
-	return fmt.Sprintf("%q", string(s))
-}
-
-func (s String) Eval(_ types.Env) (types.Value, error) { return s, nil }
-
-func (s String) Falsey() bool     { return s == "" }
-func (_ String) TypeName() string { return "string" }
-
 func IsNil(v types.Value) bool {
 	return null.IsNil(v)
 }
@@ -99,7 +60,7 @@ func IsWrappedInUnary(name string, v types.Value) (types.Value, bool) {
 		return nil, false
 	}
 
-	got, err := SymbolName(firstCar)
+	got, err := symbol.Name(firstCar)
 	if err != nil {
 		return nil, false
 	}
@@ -180,19 +141,7 @@ func IntegerValue(v types.Value) (int64, error) {
 }
 
 func StringValue(v types.Value) (string, error) {
-	rv, ok := v.(String)
-	if !ok {
-		return "", errors.New("not a string")
-	}
-	return string(rv), nil
-}
-
-func SymbolName(v types.Value) (string, error) {
-	rv, ok := v.(Identifier)
-	if !ok {
-		return "", errors.New("not a symbol")
-	}
-	return string(rv), nil
+	return str.ToString(v)
 }
 
 func UnwrapList(v types.Value) ([]types.Value, error) {
@@ -238,7 +187,7 @@ func Progn(e types.Env, vs []types.Value) (types.Value, error) {
 }
 
 func ToSymbol(s string) types.Value {
-	return Identifier(strings.ToLower(s))
+	return symbol.New(s)
 }
 
 func WrapInUnary(name string, v types.Value) types.Value {

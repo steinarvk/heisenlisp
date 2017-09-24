@@ -19,6 +19,8 @@ import (
 	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/null"
+	"github.com/steinarvk/heisenlisp/value/str"
+	"github.com/steinarvk/heisenlisp/value/symbol"
 )
 
 var (
@@ -131,8 +133,8 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		return nil, fmt.Errorf("'set!' expects 2 params, got %d", len(unevaluated))
 	}
 
-	symbol, ok := unevaluated[0].(expr.Identifier)
-	if !ok {
+	name, err := symbol.Name(unevaluated[0])
+	if err != nil {
 		return nil, fmt.Errorf("must (set!) symbol, not %v", unevaluated[0])
 	}
 
@@ -141,7 +143,7 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		return nil, err
 	}
 
-	e.Bind(string(symbol), value)
+	e.Bind(name, value)
 
 	return value, nil
 }
@@ -186,12 +188,11 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 		return nil, fmt.Errorf("defun!: too few arguments")
 	}
 
-	nameSym, ok := unevaluated[0].(expr.Identifier)
-	if !ok {
+	name, err := symbol.Name(unevaluated[0])
+	if err != nil {
 		return nil, fmt.Errorf("must defun! symbol as name, not %v", unevaluated[0])
 	}
 
-	name := string(nameSym)
 	funcVal, err := makeFunction(&name, e, unevaluated[1], unevaluated[2:])
 	if err != nil {
 		return nil, err
@@ -213,7 +214,7 @@ func (i defmacroSpecialForm) Execute(e types.Env, unevaluated []types.Value) (ty
 		return nil, fmt.Errorf("defmacro!: too few arguments")
 	}
 
-	name, err := expr.SymbolName(unevaluated[0])
+	name, err := symbol.Name(unevaluated[0])
 	if err != nil {
 		return nil, fmt.Errorf("defmacro! name: %v", err)
 	}
@@ -257,7 +258,7 @@ func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 			return nil, fmt.Errorf("binding %d: wrong length (want 2): %d", i, len(bindingList))
 		}
 
-		sym, err := expr.SymbolName(bindingList[0])
+		sym, err := symbol.Name(bindingList[0])
 		if err != nil {
 			return nil, fmt.Errorf("binding %d: error getting binding name: %v", i, err)
 		}
@@ -406,7 +407,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "_to-string", func(a types.Value) (types.Value, error) {
-		return expr.String(a.String()), nil
+		return str.New(a.String()), nil
 	})
 
 	Binary(e, "_assert!", func(sval, anyval types.Value) (types.Value, error) {

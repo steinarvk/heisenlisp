@@ -8,6 +8,7 @@ import (
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/value/symbol"
 )
 
 func NameIsPure(s string) bool {
@@ -123,14 +124,14 @@ func parseLambdaList(val types.Value) (*lambdaList, error) {
 	inOptionalMode := false
 
 	for i := 0; i < len(xs); i++ {
-		name, err := expr.SymbolName(xs[i])
+		name, err := symbol.Name(xs[i])
 		if err != nil {
 			if inOptionalMode {
 				nameSym, defaultValue, err := expr.UnwrapProperListPair(xs[i])
 				if err != nil {
 					return nil, err
 				}
-				name, err = expr.SymbolName(nameSym)
+				name, err = symbol.Name(nameSym)
 				if err != nil {
 					return nil, err
 				}
@@ -152,7 +153,7 @@ func parseLambdaList(val types.Value) (*lambdaList, error) {
 				if len(xs) != (i + 2) {
 					return nil, errors.New("&rest must be penultimate element in lambda list")
 				}
-				restName, err := expr.SymbolName(xs[i+1])
+				restName, err := symbol.Name(xs[i+1])
 				if err != nil {
 					return nil, fmt.Errorf("final element after &rest must be symbol (was %v): %v", xs[i+1], err)
 				}

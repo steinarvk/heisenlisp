@@ -1,5 +1,7 @@
 package integer
 
+// todo make type itself private
+
 import (
 	"errors"
 	"fmt"
