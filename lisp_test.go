@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -431,6 +432,48 @@ func BenchmarkTuringBinaryCounter20(b *testing.B) {
 		if err != nil {
 			b.Fatalf("evaluating benchmark code %q failed: %v", turingCode, err)
 		}
+	}
+}
+
+func BenchmarkGoBinaryCounter20(b *testing.B) {
+	reversed := func(xs []int) []int {
+		var rv []int
+		for i := len(xs) - 1; i >= 0; i-- {
+			rv = append(rv, xs[i])
+		}
+		return rv
+	}
+
+	var binaryIncReversed func(xs []int) []int
+
+	binaryIncReversed = func(xs []int) []int {
+		if len(xs) == 0 {
+			return []int{1}
+		}
+		if xs[0] == 0 {
+			return append([]int{1}, xs[1:]...)
+		}
+		return append([]int{0}, binaryIncReversed(xs[1:])...)
+	}
+
+	intToBinary := func(n int) []int {
+		x := []int{0}
+		for i := 0; i < n; i++ {
+			x = binaryIncReversed(x)
+		}
+		return reversed(x)
+	}
+
+	got := intToBinary(1000)
+	want := []int{1, 1, 1, 1, 1, 0, 1, 0, 0, 0}
+
+	if !reflect.DeepEqual(got, want) {
+		b.Fatalf("intToBinary(1000) = %v want %v", got, want)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		got = intToBinary(20)
 	}
 }
 
