@@ -17,6 +17,7 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
 	"github.com/steinarvk/heisenlisp/value/boolean"
+	"github.com/steinarvk/heisenlisp/value/builtinfunc"
 	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/function"
 	"github.com/steinarvk/heisenlisp/value/integer"
@@ -48,7 +49,7 @@ func Unary(e types.Env, name string, f func(a types.Value) (types.Value, error))
 		}
 		return f(vs[0])
 	}
-	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), wrap(name, checker)))
+	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, error)) {
@@ -58,7 +59,7 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 		}
 		return f(vs[0], vs[1])
 	}
-	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), wrap(name, checker)))
+	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value, error)) {
@@ -68,11 +69,11 @@ func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value,
 		}
 		return f(vs[0], vs[1], vs[2])
 	}
-	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), wrap(name, checker)))
+	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Values(e types.Env, name string, f func(xs []types.Value) (types.Value, error)) {
-	e.Bind(name, expr.NewBuiltinFunction(name, purity.NameIsPure(name), f))
+	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), f))
 }
 
 func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s) }

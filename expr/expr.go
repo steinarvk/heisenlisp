@@ -88,30 +88,6 @@ func ExpandQuasiQuote(e types.Env, mc types.Value) (types.Value, error) {
 	return cons.NewChain(carItems, newCdr), nil
 }
 
-type BuiltinFunctionValue struct {
-	name     string
-	function func([]types.Value) (types.Value, error)
-	pure     bool
-}
-
-func NewBuiltinFunction(name string, pure bool, f func([]types.Value) (types.Value, error)) *BuiltinFunctionValue {
-	return &BuiltinFunctionValue{name, f, pure}
-}
-
-func (f *BuiltinFunctionValue) IsPure() bool { return f.pure }
-
-func (_ *BuiltinFunctionValue) TypeName() string { return "function" }
-func (f *BuiltinFunctionValue) Call(params []types.Value) (types.Value, error) {
-	return f.function(params)
-}
-
-func (f *BuiltinFunctionValue) String() string {
-	return fmt.Sprintf("#<builtin function %q>", f.name)
-}
-func (f *BuiltinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
-
-func (f *BuiltinFunctionValue) Falsey() bool { return false }
-
 func IntegerValue(v types.Value) (int64, error) {
 	return integer.ToInt64(v)
 }
