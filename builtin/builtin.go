@@ -16,7 +16,9 @@ import (
 	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
+	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/integer"
+	"github.com/steinarvk/heisenlisp/value/null"
 )
 
 var (
@@ -384,7 +386,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("and", &andSpecialForm{})
 	e.Bind("or", &orSpecialForm{})
 
-	e.Bind("nil", expr.NilValue{})
+	e.Bind("nil", null.Nil)
 	e.Bind("true", expr.TrueValue)
 	e.Bind("false", expr.FalseValue)
 	e.Bind("maybe", unknown.MaybeValue)
@@ -457,15 +459,15 @@ func BindDefaults(e types.Env) {
 	Binary(e, "=", checkEquality)
 
 	Binary(e, "cons", func(a, b types.Value) (types.Value, error) {
-		return expr.Cons(a, b), nil
+		return cons.New(a, b), nil
 	})
 
 	Unary(e, "car", func(a types.Value) (types.Value, error) {
-		return expr.Car(a)
+		return cons.Car(a)
 	})
 
 	Unary(e, "cdr", func(a types.Value) (types.Value, error) {
-		return expr.Cdr(a)
+		return cons.Cdr(a)
 	})
 
 	Unary(e, "not", func(a types.Value) (types.Value, error) {

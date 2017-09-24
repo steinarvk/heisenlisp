@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/integer"
+	"github.com/steinarvk/heisenlisp/value/null"
 )
 
 type Bool bool
@@ -73,96 +75,53 @@ func (s String) Eval(_ types.Env) (types.Value, error) { return s, nil }
 func (s String) Falsey() bool     { return s == "" }
 func (_ String) TypeName() string { return "string" }
 
-type NilValue struct{}
-
-func (_ NilValue) Falsey() bool                          { return true }
-func (_ NilValue) String() string                        { return "nil" }
-func (v NilValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
-func (v NilValue) AtomEquals(other types.Atom) bool {
-	_, ok := other.(NilValue)
-	return ok
-}
-func (_ NilValue) TypeName() string { return "nil" }
-
 func IsNil(v types.Value) bool {
-	_, ok := v.(NilValue)
-	return ok
-}
-
-type ConsValue struct {
-	car types.Value
-	cdr types.Value
-}
-
-func Cons(a, b types.Value) *ConsValue {
-	if a == nil {
-		a = NilValue{}
-	}
-	if b == nil {
-		b = NilValue{}
-	}
-	return &ConsValue{a, b}
+	return null.IsNil(v)
 }
 
 func IsCons(v types.Value) bool {
-	_, ok := v.(*ConsValue)
-	return ok
+	return cons.IsCons(v)
 }
 
-func Car(v types.Value) (types.Value, error) {
-	rv, ok := v.(*ConsValue)
-	if !ok {
-		return nil, errors.New("not a cons")
-	}
-	return rv.car, nil
-}
-
-func Cdr(v types.Value) (types.Value, error) {
-	rv, ok := v.(*ConsValue)
-	if !ok {
-		return nil, errors.New("not a cons")
-	}
-	return rv.cdr, nil
+func WrapList(vs []types.Value) types.Value {
+	return cons.FromProperList(vs)
 }
 
 func IsWrappedInUnary(name string, v types.Value) (types.Value, bool) {
-	c, ok := v.(*ConsValue)
+	firstCar, firstCdr, ok := cons.Decompose(v)
 	if !ok {
 		return nil, false
 	}
 
-	c2, ok := c.cdr.(*ConsValue)
-	if !ok {
-		return nil, false
-	}
-	if !IsNil(c2.cdr) {
+	secondCar, secondCdr, ok := cons.Decompose(firstCdr)
+
+	if !IsNil(secondCdr) {
 		return nil, false
 	}
 
-	got, err := SymbolName(c.car)
+	got, err := SymbolName(firstCar)
 	if err != nil {
 		return nil, false
 	}
 
-	return c2.car, got == name
+	return secondCar, got == name
 }
 
 func ExpandQuasiQuote(e types.Env, mc types.Value) (types.Value, error) {
-	c, ok := mc.(*ConsValue)
+	car, cdr, ok := cons.Decompose(mc)
 	if !ok {
 		return mc, nil
 	}
 
-	head := Cons(nil, nil)
-	tail := head
+	var carItems []types.Value
 
-	if w, ok := IsWrappedInUnary("unquote", c.car); ok {
+	if w, ok := IsWrappedInUnary("unquote", car); ok {
 		newCar, err := w.Eval(e)
 		if err != nil {
 			return nil, err
 		}
-		head.car = newCar
-	} else if w, ok := IsWrappedInUnary("unquote-splicing", c.car); ok {
+		carItems = append(carItems, newCar)
+	} else if w, ok := IsWrappedInUnary("unquote-splicing", car); ok {
 		listToBeSpliced, err := w.Eval(e)
 		if err != nil {
 			return nil, err
@@ -173,128 +132,23 @@ func ExpandQuasiQuote(e types.Env, mc types.Value) (types.Value, error) {
 			return nil, err
 		}
 
-		for i, elt := range elements {
-			if i == 0 {
-				head.car = elt
-				tail = head
-			} else {
-				tail.cdr = Cons(elt, nil)
-				tail = tail.cdr.(*ConsValue)
-			}
+		for _, elt := range elements {
+			carItems = append(carItems, elt)
 		}
 	} else {
-		newCar, err := ExpandQuasiQuote(e, c.car)
+		newCar, err := ExpandQuasiQuote(e, car)
 		if err != nil {
 			return nil, err
 		}
-		head.car = newCar
+		carItems = append(carItems, newCar)
 	}
 
-	newCdr, err := ExpandQuasiQuote(e, c.cdr)
-	if err != nil {
-		return nil, err
-	}
-	tail.cdr = newCdr
-
-	return head, nil
-}
-
-func (c *ConsValue) asProperList() ([]types.Value, bool) {
-	var rv []types.Value
-
-	node := c
-	for {
-		rv = append(rv, node.car)
-		if IsNil(node.cdr) {
-			return rv, true
-		}
-
-		next, ok := node.cdr.(*ConsValue)
-		if !ok {
-			return nil, false
-		}
-		node = next
-	}
-}
-
-func (_ *ConsValue) TypeName() string { return "cons" }
-func (c *ConsValue) Falsey() bool     { return false }
-func (c *ConsValue) String() string {
-	xs := []string{}
-
-	node := c
-	for {
-		xs = append(xs, node.car.String())
-		next, ok := node.cdr.(*ConsValue)
-		if !ok {
-			if !IsNil(node.cdr) {
-				xs = append(xs, ".")
-				xs = append(xs, node.cdr.String())
-			}
-			break
-		}
-
-		node = next
-	}
-
-	return fmt.Sprintf("(%s)", strings.Join(xs, " "))
-}
-
-func (c *ConsValue) Eval(e types.Env) (types.Value, error) {
-	l, ok := c.asProperList()
-	if !ok {
-		return nil, fmt.Errorf("not a proper list")
-	}
-
-	if len(l) < 1 {
-		return nil, errors.New("cannot evaluate empty list")
-	}
-	funcVal, err := l[0].Eval(e)
+	newCdr, err := ExpandQuasiQuote(e, cdr)
 	if err != nil {
 		return nil, err
 	}
 
-	unevaluatedParams := l[1:]
-
-	specialForm, ok := funcVal.(types.SpecialForm)
-	if ok {
-		if !specialForm.IsPure() && e.IsInPureContext() {
-			return nil, errors.New("impure call in pure context")
-		}
-		return specialForm.Execute(e, unevaluatedParams)
-	}
-
-	macro, ok := funcVal.(types.Macro)
-	if ok {
-		if !macro.IsPure() && e.IsInPureContext() {
-			return nil, errors.New("impure call in pure context")
-		}
-
-		newForm, err := macro.Expand(unevaluatedParams)
-		if err != nil {
-			return nil, err
-		}
-		return newForm.Eval(e)
-	}
-
-	callable, ok := funcVal.(types.Callable)
-	if !ok {
-		return nil, fmt.Errorf("%q (%v) is not callable", l[0], funcVal)
-	}
-	if !callable.IsPure() && e.IsInPureContext() {
-		return nil, errors.New("impure call in pure context")
-	}
-
-	var params []types.Value
-	for _, unevaled := range unevaluatedParams {
-		evaled, err := unevaled.Eval(e)
-		if err != nil {
-			return nil, err
-		}
-		params = append(params, evaled)
-	}
-
-	return callable.Call(params)
+	return cons.NewChain(carItems, newCdr), nil
 }
 
 type BuiltinFunctionValue struct {
@@ -341,40 +195,8 @@ func SymbolName(v types.Value) (string, error) {
 	return string(rv), nil
 }
 
-func WrapList(vs []types.Value) types.Value {
-	if len(vs) == 0 {
-		return NilValue{}
-	}
-	var head, tail *ConsValue
-	for _, v := range vs {
-		nc := &ConsValue{v, NilValue{}}
-		if head == nil {
-			head = nc
-			tail = nc
-		} else {
-			tail.cdr = nc
-			tail = nc
-		}
-	}
-	return head
-}
-
 func UnwrapList(v types.Value) ([]types.Value, error) {
-	if IsNil(v) {
-		return nil, nil
-	}
-
-	rv, ok := v.(*ConsValue)
-	if !ok {
-		return nil, errors.New("not a list")
-	}
-
-	rrv, ok := rv.asProperList()
-	if !ok {
-		return nil, errors.New("not a list")
-	}
-
-	return rrv, nil
+	return cons.ToProperList(v)
 }
 
 func UnwrapFixedList(v types.Value, l int) ([]types.Value, error) {
@@ -420,7 +242,7 @@ func ToSymbol(s string) types.Value {
 }
 
 func WrapInUnary(name string, v types.Value) types.Value {
-	return Cons(ToSymbol(name), Cons(v, nil))
+	return cons.New(ToSymbol(name), cons.New(v, nil))
 }
 
 func AtomEquals(a, b types.Value) bool {
@@ -446,19 +268,23 @@ func Equals(a, b types.Value) (types.TernaryTruthValue, error) {
 	}
 
 	if IsCons(a) && IsCons(b) {
-		ac := a.(*ConsValue)
-		bc := b.(*ConsValue)
-		tv1, err := Equals(ac.car, bc.car)
+		acar, acdr, _ := cons.Decompose(a)
+		bcar, bcdr, _ := cons.Decompose(b)
+
+		tv1, err := Equals(acar, bcar)
 		if err != nil {
 			return types.InvalidTernary, err
 		}
+
 		if tv1 == types.False {
 			return types.False, nil
 		}
-		tv2, err := Equals(ac.cdr, bc.cdr)
+
+		tv2, err := Equals(acdr, bcdr)
 		if err != nil {
 			return types.InvalidTernary, err
 		}
+
 		return ternaryAnd(tv1, tv2), nil
 	}
 
