@@ -11,7 +11,7 @@ CREATE TABLE result_log (
   result_id BIGSERIAL PRIMARY KEY,
   timestamp_utcnano BIGINT NOT NULL,
   duration_nanos BIGINT NOT NULL,
-  request_id BIGINT NOT NULL REFERENCES request_log (request_id),
+  request_id BIGINT NOT NULL REFERENCES request_log (request_id) ON DELETE CASCADE,
   result TEXT NULL,
   error TEXT NULL
 );
