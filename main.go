@@ -21,6 +21,8 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 
 	"github.com/steinarvk/heisenlisp/gen/parser"
+
+	_ "github.com/lib/pq"
 )
 
 var (

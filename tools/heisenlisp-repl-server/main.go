@@ -1,24 +1,67 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
+	"github.com/steinarvk/secrets"
+
+	_ "github.com/lib/pq"
 )
 
 var (
-	listenAddress = flag.String("listen_address", "127.0.0.1:6861", "http address on which to serve")
+	listenAddress        = flag.String("listen_address", "127.0.0.1:6861", "http address on which to serve")
+	loggingDatabaseCreds = flag.String("logging_database_credentials", "", "logging database credentials")
 )
+
+var (
+	metricRequests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "repl_server_requests",
+			Help:      "Requests to the REPL server",
+		},
+		[]string{"page"},
+	)
+
+	metricEvaluated = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "repl_server_evaluated",
+			Help:      "Number of queries evaluated by the REPL server",
+		},
+	)
+
+	metricEvaluationErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "repl_server_evaluation_errors",
+			Help:      "Number of queries evaluated by the REPL server resulting in errors",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(metricRequests)
+	prometheus.MustRegister(metricEvaluated)
+	prometheus.MustRegister(metricEvaluationErrors)
+}
 
 var (
 	mainPageData = []byte(`
@@ -39,7 +82,23 @@ var (
 		</head>
 		<body>
 			<div id="evaluated">
-				
+				<p>
+					Enter some expressions in the text box below to evaluate them.
+				</p>
+
+				<p>
+					Things to try:
+					<ul>
+						<li><code>(+ 2 2)</code></li>
+						<li><code>(* 2 (any-of 10 30))</code></li>
+						<li><code>(= (any-of 0 1) 1)</code></li>
+					</ul>
+				</p>
+
+				<p>
+					Note that queries may be logged and stored for debugging purposes.
+					Don't submit anything that you don't want to be logged.
+				</p>
 			</div>
 			<div id="form">
 				<form>
@@ -110,8 +169,106 @@ var (
 `)
 )
 
+type databaseLogger struct {
+	db             *sql.DB
+	serverHostname string
+}
+
+func newDatabaseLogger(secretsFilename string) (*databaseLogger, error) {
+	if secretsFilename == "" {
+		return nil, nil
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	dbSecrets := secrets.Postgres{}
+	if err := secrets.FromYAML(secretsFilename, &dbSecrets); err != nil {
+		return nil, err
+	}
+
+	url, err := dbSecrets.AsURL()
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("postgres", url)
+	if err != nil {
+		return nil, err
+	}
+
+	return &databaseLogger{db, hostname}, nil
+}
+
+func (d *databaseLogger) logRequest(t0 time.Time, req *http.Request, data []byte) (int64, error) {
+	if d == nil {
+		return 0, nil
+	}
+
+	jsonHeaders, err := json.Marshal(req.Header)
+	if err != nil {
+		return 0, err
+	}
+
+	var requestId int64
+
+	err = d.db.QueryRow(`
+		INSERT INTO request_log (
+			timestamp_utcnano,
+			server_hostname,
+			client_hostname,
+			http_headers,
+			expr
+		) VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5
+		) RETURNING request_id
+	`, t0.UnixNano(), d.serverHostname, req.Host, jsonHeaders, string(data)).Scan(&requestId)
+	return requestId, err
+}
+
+func (d *databaseLogger) logResponse(t1 time.Time, dur time.Duration, id int64, result string, err error) error {
+	if d == nil {
+		return nil
+	}
+
+	var errorDesc *string
+	var resultDesc *string
+
+	if err != nil {
+		s := err.Error()
+		errorDesc = &s
+	}
+	if result != "" {
+		resultDesc = &result
+	}
+
+	_, err = d.db.Exec(`
+		INSERT INTO result_log (
+			timestamp_utcnano,
+			duration_nanos,
+			request_id,
+			result,
+			error
+		) VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5
+		)`, t1.UnixNano(), int64(dur), id, resultDesc, errorDesc)
+	return err
+}
+
 func main() {
 	flag.Parse()
+
+	os.Unsetenv("PGPASSFILE")
 
 	listener, err := net.Listen("tcp", *listenAddress)
 	if err != nil {
@@ -126,30 +283,46 @@ func main() {
 		mu.Lock()
 		defer mu.Unlock()
 
+		metricEvaluated.Inc()
 		val, err := code.Run(env.New(root), "<request data>", data)
 		if err != nil {
+			metricEvaluationErrors.Inc()
 			return "", err
 		}
 
 		return val.String(), nil
 	}
 
-	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/api/eval", func(w http.ResponseWriter, req *http.Request) {
+	requestLogger, err := newDatabaseLogger(*loggingDatabaseCreds)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	handler := func(w http.ResponseWriter, req *http.Request) error {
 		if req.Method != "POST" {
-			http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
-			return
+			return errors.New("only POST allowed")
 		}
 		data, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			http.Error(w, "read error", http.StatusBadRequest)
-			return
+			return fmt.Errorf("read error: %v", err)
 		}
 
 		var responseData []byte
 
-		s, err := evaluate(data)
+		t0 := time.Now()
+		id, err := requestLogger.logRequest(t0, req, data)
 		if err != nil {
+			return fmt.Errorf("database logging error (request): %v", err)
+		}
+
+		s, evaluationErr := evaluate(data)
+
+		t1 := time.Now()
+		if err := requestLogger.logResponse(t1, t1.Sub(t0), id, s, evaluationErr); err != nil {
+			return fmt.Errorf("database logging error (result): %v", err)
+		}
+
+		if evaluationErr != nil {
 			responseData, err = json.Marshal(struct {
 				Input string `json:"input"`
 				Ok    bool   `json:"ok"`
@@ -157,7 +330,7 @@ func main() {
 			}{
 				Ok:    false,
 				Input: strings.TrimSpace(string(data)),
-				Error: err.Error(),
+				Error: evaluationErr.Error(),
 			})
 		} else {
 			responseData, err = json.Marshal(struct {
@@ -172,14 +345,27 @@ func main() {
 		}
 
 		if err != nil {
-			http.Error(w, "JSON marshalling error", http.StatusInternalServerError)
-			return
+			return fmt.Errorf("JSON marshalling error: %v", err)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(responseData)
+
+		return nil
+	}
+
+	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/api/eval", func(w http.ResponseWriter, req *http.Request) {
+		metricRequests.WithLabelValues("api-eval").Inc()
+		if err := handler(w, req); err != nil {
+			log.Printf("error handling /api/eval: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Printf("successfully handled /api/eval request")
 	})
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		metricRequests.WithLabelValues("root").Inc()
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(mainPageData)
 	})
