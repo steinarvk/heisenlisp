@@ -1,4 +1,11 @@
 *.swp
+/heisenlisp-repl-server
 /heisenlisp
+/heisenlisp.test
+/tools/heisenlisp-repl-server/heisenlisp-repl-server
 /cover.out
 .heisenlisp_history
+/secrets/
+Dockerfile
+build-docker.sh
+deploy-docker.sh
