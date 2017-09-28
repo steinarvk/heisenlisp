@@ -2,10 +2,10 @@ package symbol
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -48,9 +48,10 @@ func (i symbolValue) String() string {
 }
 
 func (i symbolValue) Eval(e types.Env) (types.Value, error) {
-	val, ok := e.Lookup(string(i))
+	n := string(i)
+	val, ok := e.Lookup(n)
 	if !ok {
-		return nil, fmt.Errorf("no such identifier: %q", i)
+		return nil, lisperr.UnboundVariable(n)
 	}
 	return val, nil
 }
@@ -81,4 +82,9 @@ func New(s string) types.Value {
 	s = strings.ToLower(s)
 	metricNewSymbol.Inc()
 	return symbolValue(s)
+}
+
+func Is(v types.Value) bool {
+	_, ok := v.(symbolValue)
+	return ok
 }

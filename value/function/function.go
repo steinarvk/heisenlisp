@@ -5,6 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/lambdalist"
+	"github.com/steinarvk/heisenlisp/macroexpand"
 	"github.com/steinarvk/heisenlisp/purity"
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -45,11 +46,17 @@ func New(env types.Env, name string, formalParams types.Value, body []types.Valu
 	if err != nil {
 		return nil, fmt.Errorf("invalid lambda list: %v", err)
 	}
+
+	expandedBody, err := macroexpand.MacroexpandMultiple(env, body)
+	if err != nil {
+		return nil, fmt.Errorf("error macroexpanding function body: %v", err)
+	}
+
 	rv := &functionValue{
 		name:       name,
 		lexicalEnv: env,
 		lambdaList: ll,
-		body:       body,
+		body:       expandedBody,
 	}
 	if purity.NameIsPure(name) {
 		rv.pure = true
