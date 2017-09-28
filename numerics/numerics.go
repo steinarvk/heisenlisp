@@ -5,17 +5,19 @@ import (
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/types"
-	"github.com/steinarvk/heisenlisp/unknown"
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/real"
+
+	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
+	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
 )
 
 func wrapBinary(a, b types.Value, f func(a, b types.Value) (types.Value, error)) (types.Value, error) {
-	av, ok1 := unknown.PossibleValues(a)
-	bv, ok2 := unknown.PossibleValues(b)
+	av, ok1 := anyof.PossibleValues(a)
+	bv, ok2 := anyof.PossibleValues(b)
 	if !ok1 || !ok2 {
 		// error?
-		return unknown.FullyUnknown{}, nil
+		return fullyunknown.Value, nil
 	}
 	if len(av) > 1 || len(bv) > 1 {
 		var rv []types.Value
@@ -28,7 +30,7 @@ func wrapBinary(a, b types.Value, f func(a, b types.Value) (types.Value, error))
 				rv = append(rv, res)
 			}
 		}
-		return unknown.NewMaybeAnyOf(rv)
+		return anyof.New(rv)
 	}
 
 	return f(a, b)
@@ -89,8 +91,8 @@ func fromInt64(n int64) types.Value {
 }
 
 func BinaryPlus(a, b types.Value) (types.Value, error) {
-	if unknown.IsFullyUnknown(a) || unknown.IsFullyUnknown(b) {
-		return unknown.FullyUnknown{}, nil
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return fullyunknown.Value, nil
 	}
 
 	return wrapBinary(a, b, toBinaryTower(
@@ -104,8 +106,8 @@ func BinaryPlus(a, b types.Value) (types.Value, error) {
 }
 
 func BinaryMinus(a, b types.Value) (types.Value, error) {
-	if unknown.IsFullyUnknown(a) || unknown.IsFullyUnknown(b) {
-		return unknown.FullyUnknown{}, nil
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return fullyunknown.Value, nil
 	}
 
 	return wrapBinary(a, b, toBinaryTower(
@@ -119,8 +121,8 @@ func BinaryMinus(a, b types.Value) (types.Value, error) {
 }
 
 func BinaryMultiply(a, b types.Value) (types.Value, error) {
-	if unknown.IsFullyUnknown(a) || unknown.IsFullyUnknown(b) {
-		return unknown.FullyUnknown{}, nil
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return fullyunknown.Value, nil
 	}
 
 	return wrapBinary(a, b, toBinaryTower(
@@ -134,8 +136,8 @@ func BinaryMultiply(a, b types.Value) (types.Value, error) {
 }
 
 func BinaryDivision(a, b types.Value) (types.Value, error) {
-	if unknown.IsFullyUnknown(a) || unknown.IsFullyUnknown(b) {
-		return unknown.FullyUnknown{}, nil
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return fullyunknown.Value, nil
 	}
 
 	return wrapBinary(a, b, toBinaryTower(
@@ -150,8 +152,8 @@ func BinaryDivision(a, b types.Value) (types.Value, error) {
 }
 
 func Mod(a, b types.Value) (types.Value, error) {
-	if unknown.IsFullyUnknown(a) || unknown.IsFullyUnknown(b) {
-		return unknown.FullyUnknown{}, nil
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return fullyunknown.Value, nil
 	}
 
 	return wrapBinary(a, b, toBinaryInt64(func(a, b int64) (types.Value, error) {

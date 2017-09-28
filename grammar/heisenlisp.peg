@@ -16,8 +16,8 @@
   	"github.com/steinarvk/heisenlisp/value/integer"
   	"github.com/steinarvk/heisenlisp/value/str"
   	"github.com/steinarvk/heisenlisp/value/real"
+  	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
   	"github.com/steinarvk/heisenlisp/types"
-    "github.com/steinarvk/heisenlisp/unknown"
   
     sexpr "github.com/steinarvk/heisenlisp/expr"
   )
@@ -41,7 +41,7 @@ Expr <- (
   / Unknown
 )
 
-Unknown <- "#unknown" { return unknown.FullyUnknown{}, nil }
+Unknown <- "#unknown" { return fullyunknown.Value, nil }
 
 
 LPAREN <- "("

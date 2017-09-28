@@ -25,6 +25,8 @@ import (
 	"github.com/steinarvk/heisenlisp/value/null"
 	"github.com/steinarvk/heisenlisp/value/str"
 	"github.com/steinarvk/heisenlisp/value/symbol"
+	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
+	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
 )
 
 var (
@@ -114,7 +116,7 @@ func (i ifSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Va
 			return nil, err
 		}
 
-		return unknown.NewMaybeAnyOf([]types.Value{
+		return anyof.New([]types.Value{
 			thenVal, elseVal,
 		})
 	case types.True:
@@ -395,7 +397,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("true", boolean.True)
 	e.Bind("false", boolean.False)
 	e.Bind("maybe", unknown.MaybeValue)
-	e.Bind("unknown", unknown.FullyUnknown{})
+	e.Bind("unknown", fullyunknown.Value)
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)
@@ -706,15 +708,15 @@ func BindDefaults(e types.Env) {
 	})
 
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
-		return unknown.NewMaybeAnyOf(xs)
+		return anyof.New(xs)
 	})
 
 	Unary(e, "possible-values", func(v types.Value) (types.Value, error) {
-		vals, ok := unknown.PossibleValues(v)
+		vals, ok := anyof.PossibleValues(v)
 		if ok {
 			return expr.WrapList(vals), nil
 		}
-		return unknown.FullyUnknown{}, nil
+		return fullyunknown.Value, nil
 	})
 
 	Unary(e, "range", func(v types.Value) (types.Value, error) {
