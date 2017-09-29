@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -763,10 +764,45 @@ func loadFile(e types.Env, fn string) error {
 func loadStandardLibrary(e types.Env) error {
 	// TODO: for compiled binaries, embed standard library
 
-	fns, err := listLispFilesInOrder("./core")
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
+
+	wd, err = filepath.Abs(wd)
+	if err != nil {
+		return err
+	}
+
+	for {
+		_, err := os.Stat(filepath.Join(wd, "core"))
+		if err == nil {
+			break
+		}
+		if !os.IsNotExist(err) {
+			return err
+		}
+		nwd := filepath.Dir(wd)
+		if nwd == wd {
+			return errors.New("standard library ./core not found")
+		}
+		wd = nwd
+	}
+
+	dir := filepath.Join(wd, "core")
+
+	if Verbose {
+		log.Printf("standard library directory: %q", dir)
+	}
+
+	fns, err := listLispFilesInOrder(dir)
+	if err != nil {
+		return err
+	}
+	if len(fns) == 0 {
+		return errors.New("no standard library .hlisp files found")
+	}
+
 	if Verbose {
 		log.Printf("standard library: %v", fns)
 	}

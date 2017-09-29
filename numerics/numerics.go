@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/numtower"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/real"
@@ -34,6 +35,27 @@ func wrapBinary(a, b types.Value, f func(a, b types.Value) (types.Value, error))
 	}
 
 	return f(a, b)
+}
+
+func toBinaryNumericValues(f func(types.Numeric, types.Numeric) (interface{}, error)) func(types.Value, types.Value) (types.Value, error) {
+	return func(a, b types.Value) (types.Value, error) {
+		an, ok := a.(types.Numeric)
+		if !ok {
+			return nil, fmt.Errorf("not a number: %v", a)
+		}
+
+		bn, ok := b.(types.Numeric)
+		if !ok {
+			return nil, fmt.Errorf("not a number: %v", b)
+		}
+
+		rvIf, err := f(an, bn)
+		if err != nil {
+			return nil, err
+		}
+
+		return rvIf.(types.Value), nil
+	}
 }
 
 func toBinaryNumeric(f func(types.Numeric, types.Numeric) (types.Value, error)) func(types.Value, types.Value) (types.Value, error) {
@@ -90,65 +112,73 @@ func fromInt64(n int64) types.Value {
 	return integer.FromInt64(n)
 }
 
+var binaryPlus = toBinaryNumericValues(numtower.BinaryTowerFunc{
+	OnInt64s: func(a, b int64) (interface{}, error) {
+		return integer.FromInt64(a + b), nil
+	},
+	OnFloat64s: func(a, b float64) (interface{}, error) {
+		return real.FromFloat64(a + b), nil
+	},
+}.Call)
+
 func BinaryPlus(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
 		return fullyunknown.Value, nil
 	}
 
-	return wrapBinary(a, b, toBinaryTower(
-		func(a, b int64) (types.Value, error) {
-			return fromInt64(a + b), nil
-		},
-		func(a, b float64) (types.Value, error) {
-			return real.FromFloat64(a + b), nil
-		},
-	))
+	return wrapBinary(a, b, binaryPlus)
 }
+
+var binaryMinus = toBinaryNumericValues(numtower.BinaryTowerFunc{
+	OnInt64s: func(a, b int64) (interface{}, error) {
+		return integer.FromInt64(a - b), nil
+	},
+	OnFloat64s: func(a, b float64) (interface{}, error) {
+		return real.FromFloat64(a - b), nil
+	},
+}.Call)
 
 func BinaryMinus(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
 		return fullyunknown.Value, nil
 	}
 
-	return wrapBinary(a, b, toBinaryTower(
-		func(a, b int64) (types.Value, error) {
-			return fromInt64(a - b), nil
-		},
-		func(a, b float64) (types.Value, error) {
-			return real.FromFloat64(a - b), nil
-		},
-	))
+	return wrapBinary(a, b, binaryMinus)
 }
+
+var binaryMultiply = toBinaryNumericValues(numtower.BinaryTowerFunc{
+	OnInt64s: func(a, b int64) (interface{}, error) {
+		return integer.FromInt64(a * b), nil
+	},
+	OnFloat64s: func(a, b float64) (interface{}, error) {
+		return real.FromFloat64(a * b), nil
+	},
+}.Call)
 
 func BinaryMultiply(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
 		return fullyunknown.Value, nil
 	}
 
-	return wrapBinary(a, b, toBinaryTower(
-		func(a, b int64) (types.Value, error) {
-			return fromInt64(a * b), nil
-		},
-		func(a, b float64) (types.Value, error) {
-			return real.FromFloat64(a * b), nil
-		},
-	))
+	return wrapBinary(a, b, binaryMultiply)
 }
+
+var binaryDivision = toBinaryNumericValues(numtower.BinaryTowerFunc{
+	OnInt64s: func(a, b int64) (interface{}, error) {
+		x := float64(a) / float64(b)
+		return real.FromFloat64(x), nil
+	},
+	OnFloat64s: func(a, b float64) (interface{}, error) {
+		return real.FromFloat64(a / b), nil
+	},
+}.Call)
 
 func BinaryDivision(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
 		return fullyunknown.Value, nil
 	}
 
-	return wrapBinary(a, b, toBinaryTower(
-		func(a, b int64) (types.Value, error) {
-			x := float64(a) / float64(b)
-			return real.FromFloat64(x), nil
-		},
-		func(a, b float64) (types.Value, error) {
-			return real.FromFloat64(a / b), nil
-		},
-	))
+	return wrapBinary(a, b, binaryDivision)
 }
 
 func Mod(a, b types.Value) (types.Value, error) {

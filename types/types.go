@@ -51,6 +51,7 @@ type Env interface {
 }
 
 type Numeric interface {
+	String() string
 	AsInt64() (int64, bool)
 	AsDouble() (float64, bool)
 }
