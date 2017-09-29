@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/numrange"
 	"github.com/steinarvk/heisenlisp/numtower"
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/unknown"
+	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/real"
 
@@ -192,4 +195,52 @@ func Mod(a, b types.Value) (types.Value, error) {
 		}
 		return fromInt64(a % b), nil
 	}))
+}
+
+var numericLeq = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+	return boolean.FromBool(numrange.NewBelow(b, true).Contains(a)), nil
+})
+
+func BinaryLeq(a, b types.Value) (types.Value, error) {
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return unknown.MaybeValue, nil
+	}
+
+	return wrapBinary(a, b, numericLeq)
+}
+
+var numericLess = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+	return boolean.FromBool(numrange.NewBelow(b, false).Contains(a)), nil
+})
+
+func BinaryLess(a, b types.Value) (types.Value, error) {
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return unknown.MaybeValue, nil
+	}
+
+	return wrapBinary(a, b, numericLess)
+}
+
+var numericGeq = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+	return boolean.FromBool(numrange.NewAbove(b, true).Contains(a)), nil
+})
+
+func BinaryGeq(a, b types.Value) (types.Value, error) {
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return unknown.MaybeValue, nil
+	}
+
+	return wrapBinary(a, b, numericGeq)
+}
+
+var numericGreater = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+	return boolean.FromBool(numrange.NewAbove(b, false).Contains(a)), nil
+})
+
+func BinaryGreater(a, b types.Value) (types.Value, error) {
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return unknown.MaybeValue, nil
+	}
+
+	return wrapBinary(a, b, numericGreater)
 }

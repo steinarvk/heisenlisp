@@ -738,6 +738,11 @@ func BindDefaults(e types.Env) {
 	Binary(e, "low-level-multiply", numerics.BinaryMultiply)
 	Binary(e, "low-level-divide", numerics.BinaryDivision)
 	Binary(e, "mod", numerics.Mod)
+
+	Binary(e, "<=", numerics.BinaryLeq)
+	Binary(e, "<", numerics.BinaryLess)
+	Binary(e, ">", numerics.BinaryGreater)
+	Binary(e, ">=", numerics.BinaryGeq)
 }
 
 func listLispFilesInOrder(dirname string) ([]string, error) {

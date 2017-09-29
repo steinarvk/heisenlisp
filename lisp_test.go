@@ -185,6 +185,16 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= (when false 42 43) nil)`,
 		`(= (unless true 42 43) nil)`,
 		`(= (unless false 42 43) 43)`,
+		`(<= 10 20)`,
+		`(<= 10 10)`,
+		`(>= 20 10)`,
+		`(>= 20 20)`,
+		`(< 10 20)`,
+		`(not (< 10 10))`,
+		`(> 20 10)`,
+		`(not (> 20 20))`,
+		`(not (<= 20 10))`,
+		`(not (>= 10 20))`,
 	}
 
 	for i, s := range exprs {
@@ -324,9 +334,7 @@ func TestExamples(t *testing.T) {
 	dirname := "./examples/"
 
 	worksInProgress := []string{
-		"list-contains.hlisp",
 		"lists-of-unknown-length.hlisp",
-		"two-digit-numbers.hlisp",
 	}
 
 	filenames, err := listLispFilesInOrder(dirname)

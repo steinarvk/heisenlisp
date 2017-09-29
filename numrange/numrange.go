@@ -12,6 +12,20 @@ type Range struct {
 	upperBoundInclusive bool
 }
 
+func NewBelow(x types.Numeric, inclusive bool) *Range {
+	return &Range{
+		upperBound:          x,
+		upperBoundInclusive: inclusive,
+	}
+}
+
+func NewAbove(x types.Numeric, inclusive bool) *Range {
+	return &Range{
+		lowerBound:          x,
+		lowerBoundInclusive: inclusive,
+	}
+}
+
 func New(low, high types.Numeric, lowIncl, highIncl bool) *Range {
 	// TODO? check valid / not empty
 	return &Range{
