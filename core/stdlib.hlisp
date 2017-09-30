@@ -50,3 +50,6 @@
 
 (defmacro! unless (condition &rest body)
   `(if (not ,condition) (progn ,@body) nil))
+
+(defun! cons? (x) (= 'cons (type x)))
+(defun! _cons? (x) (= 'cons (_type x)))
