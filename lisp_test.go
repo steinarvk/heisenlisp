@@ -195,6 +195,14 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(not (> 20 20))`,
 		`(not (<= 20 10))`,
 		`(not (>= 10 20))`,
+		`(_maybe? maybe)`,
+		`(not (_maybe? true))`,
+		`(not (_maybe? false))`,
+		`(not (_maybe? "maybe"))`,
+		`(not (_maybe? 'maybe))`,
+		`(_maybe? (any-of true false))`,
+		`(_maybe? (any-of false true))`,
+		`(_maybe? (= (any-of 1 2) 2))`,
 	}
 
 	for i, s := range exprs {

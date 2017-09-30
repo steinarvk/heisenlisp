@@ -53,3 +53,9 @@
 
 (defun! cons? (x) (= 'cons (type x)))
 (defun! _cons? (x) (= 'cons (_type x)))
+
+(defun! _maybe? (x)
+  (and (= 'any-of (_type x))
+       (let ((vs (possible-values x)))
+         (or (= (list true false) vs)
+             (= (list false true) vs)))))
