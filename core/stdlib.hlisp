@@ -4,6 +4,13 @@
 (defun! * (&rest xs) (reduce-left low-level-multiply 1 xs))
 (defun! / (numerator &rest denominators) (low-level-divide numerator (apply * denominators)))
 
+(defun! inc (n) (+ n 1))
+(defun! dec (n) (- n 1))
+
+(let ((f (lambda (n _) (inc n))))
+  (defun! length (xs)
+    (fold-left f 0 xs)))
+
 (defmacro! progn (&rest body) `(let () ,@body))
 
 (defun! negate (x) (* -1 x))
@@ -31,9 +38,6 @@
        ,(if (nil? more-clauses)
             nil
             (cons 'cond more-clauses))))
-
-(defun! inc (n) (+ n 1))
-(defun! dec (n) (- n 1))
 
 (defun! _cons? (x) (equals? 'cons (_type x)))
 

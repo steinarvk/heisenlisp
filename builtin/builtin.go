@@ -155,7 +155,7 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		return nil, err
 	}
 
-	e.Bind(name, value)
+	e.BindRoot(name, value)
 
 	return value, nil
 }
@@ -210,7 +210,7 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 		return nil, err
 	}
 
-	e.Bind(name, funcVal)
+	e.BindRoot(name, funcVal)
 	return funcVal, nil
 }
 
@@ -236,7 +236,7 @@ func (i defmacroSpecialForm) Execute(e types.Env, unevaluated []types.Value) (ty
 		return nil, err
 	}
 
-	e.Bind(name, macroValue)
+	e.BindRoot(name, macroValue)
 
 	return macroValue, nil
 }
@@ -699,6 +699,36 @@ func BindDefaults(e types.Env) {
 		}
 
 		return reduced, nil
+	})
+
+	Ternary(e, "fold-left", func(f, initial, l types.Value) (types.Value, error) {
+		// folding is like reduction, except the initial value is always used.
+
+		xs, err := expr.UnwrapList(l)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(xs) == 0 {
+			return initial, nil
+		}
+
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, errors.New("not a callable")
+		}
+
+		folded := initial
+
+		for _, x := range xs {
+			next, err := callable.Call([]types.Value{folded, x})
+			if err != nil {
+				return nil, err
+			}
+			folded = next
+		}
+
+		return folded, nil
 	})
 
 	Values(e, "trace", func(xs []types.Value) (types.Value, error) {

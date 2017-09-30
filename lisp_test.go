@@ -262,6 +262,9 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= 1 1.0)`,
 		`(= 42 42.0)`,
 		`(= (/ 1 2) 0.5)`,
+		`(= "((((nil 1) 2) 3) 4)" (_to-string (fold-left list '() '(1 2 3 4))))`,
+		`(= "(((1 2) 3) 4)" (_to-string (reduce-left list '() '(1 2 3 4))))`,
+		`(= (length (list 1 2 3 4 5)) 5)`,
 	}
 
 	for i, s := range exprs {

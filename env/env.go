@@ -59,6 +59,14 @@ func (e *env) Bind(k string, v types.Value) {
 	e.bindings[k] = v
 }
 
+func (e *env) BindRoot(k string, v types.Value) {
+	if e.parent == nil {
+		e.Bind(k, v)
+		return
+	}
+	e.parent.BindRoot(k, v)
+}
+
 func (e *env) Lookup(k string) (types.Value, bool) {
 	rv, ok := e.bindings[k]
 	if ok {

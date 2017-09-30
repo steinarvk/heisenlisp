@@ -46,6 +46,7 @@ type Callable interface {
 
 type Env interface {
 	Bind(k string, v Value)
+	BindRoot(k string, v Value)
 	Lookup(k string) (Value, bool)
 	MarkPure()
 	IsInPureContext() bool
