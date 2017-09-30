@@ -4,15 +4,12 @@ import (
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/types"
-	"github.com/steinarvk/heisenlisp/value/boolean"
 
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 )
 
 var (
-	MaybeValue = anyof.NewOrPanic([]types.Value{
-		boolean.True, boolean.False,
-	})
+	MaybeValue = anyof.MaybeValue
 )
 
 func MayBeTruthy(v types.Value) (bool, error) {

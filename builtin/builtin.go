@@ -12,6 +12,7 @@ import (
 
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
+	"github.com/steinarvk/heisenlisp/equality"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/purity"
@@ -30,6 +31,8 @@ import (
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
 	"github.com/steinarvk/heisenlisp/value/unknowns/numinrange"
 	"github.com/steinarvk/heisenlisp/value/unknowns/typed"
+
+	_ "github.com/steinarvk/heisenlisp/cyclebreaker/impl"
 )
 
 var (
@@ -408,7 +411,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Binary(e, "_atom-eq?", func(a, b types.Value) (types.Value, error) {
-		return boolean.FromBool(expr.AtomEquals(a, b)), nil
+		return boolean.FromBool(equality.AtomEquals(a, b)), nil
 	})
 
 	Unary(e, "_type", func(a types.Value) (types.Value, error) {
@@ -450,7 +453,7 @@ func BindDefaults(e types.Env) {
 		// Consider: (= (any-of 0 1) (any-of 1 2) (any-of 0 3))
 		// We need to precisely define what exactly this means.
 		// I guess it _should_ mean taking the intersection of all of these?
-		tv, err := expr.Equals(a, b)
+		tv, err := equality.Equals(a, b)
 		if err != nil {
 			return nil, err
 		}

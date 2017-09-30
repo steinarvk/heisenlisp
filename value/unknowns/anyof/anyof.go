@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/steinarvk/heisenlisp/expr"
+	"github.com/steinarvk/heisenlisp/cyclebreaker"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
@@ -22,6 +22,11 @@ const (
 type anyOf struct {
 	vals  []types.Value
 	types []string
+}
+
+var MaybeValue = anyOf{
+	vals:  []types.Value{boolean.True, boolean.False},
+	types: []string{boolean.TypeName},
 }
 
 func (a anyOf) isMaybe() bool {
@@ -83,7 +88,7 @@ func (a anyOf) Intersects(v types.Value) (bool, error) {
 
 	for _, x := range xs {
 		for _, y := range ys {
-			ternaryBool, err := expr.Equals(x, y)
+			ternaryBool, err := cyclebreaker.Equals(x, y)
 			if err != nil {
 				return false, err
 			}
@@ -109,7 +114,7 @@ func newRaw(xs []types.Value) types.Value {
 	addIfNew := func(singleValue types.Value) {
 		// todo: do this more efficiently.
 		for _, old := range rv.vals {
-			if expr.AtomEquals(old, singleValue) {
+			if cyclebreaker.AtomEquals(old, singleValue) {
 				return
 			}
 		}

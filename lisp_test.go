@@ -259,6 +259,9 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_atom-eq? "#number-in-range([-13869,10050])" (_to-string
 		   (* (number-in-range 'from -50 'to 69)
 			    (number-in-range 'from -201 'to 101))))`,
+		`(= 1 1.0)`,
+		`(= 42 42.0)`,
+		`(= (/ 1 2) 0.5)`,
 	}
 
 	for i, s := range exprs {

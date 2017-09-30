@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numrange"
 	"github.com/steinarvk/heisenlisp/numtower"
 	"github.com/steinarvk/heisenlisp/types"
@@ -298,4 +299,22 @@ func BinaryGreater(a, b types.Value) (types.Value, error) {
 	}
 
 	return wrapBinary(a, b, numericGreater)
+}
+
+var numericEq = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+	eq := numcmp.CompareOrPanic(a, b) == numcmp.Equal
+	return boolean.FromBool(eq), nil
+})
+
+func BinaryEq(a, b types.Value) (types.Value, error) {
+	if fullyunknown.Is(a) || fullyunknown.Is(b) {
+		return unknown.MaybeValue, nil
+	}
+
+	return wrapBinary(a, b, numericEq)
+}
+
+func IsNumeric(v types.Value) bool {
+	_, ok := v.(types.Numeric)
+	return ok
 }
