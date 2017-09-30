@@ -304,6 +304,7 @@ func TestExpressionsTruthy(t *testing.T) {
 
 var values = []string{
 	"123",
+	"3.14",
 	"true",
 	"false",
 	"maybe",
@@ -317,6 +318,9 @@ var values = []string{
 	"(list)",
 	"(any-of 123 124)",
 	"(list 1 2 (any-of 3 4))",
+	"(any-of 1.5 2)",
+	"(list 1.5 2)",
+	"(unknown-of-type 'integer)",
 }
 
 func TestUnaryInvariants(t *testing.T) {
