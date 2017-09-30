@@ -497,22 +497,22 @@ var g = &grammar {
 },
 {
 	name: "WhitespaceThenExpr",
-	pos: position{line: 90, col: 1, offset: 1744},
+	pos: position{line: 86, col: 1, offset: 1655},
 	expr: &actionExpr{
-	pos: position{line: 90, col: 23, offset: 1766},
+	pos: position{line: 86, col: 23, offset: 1677},
 	run: (*parser).callonWhitespaceThenExpr1,
 	expr: &seqExpr{
-	pos: position{line: 90, col: 23, offset: 1766},
+	pos: position{line: 86, col: 23, offset: 1677},
 	exprs: []interface{}{
 &ruleRefExpr{
-	pos: position{line: 90, col: 23, offset: 1766},
+	pos: position{line: 86, col: 23, offset: 1677},
 	name: "_",
 },
 &labeledExpr{
-	pos: position{line: 90, col: 25, offset: 1768},
+	pos: position{line: 86, col: 25, offset: 1679},
 	label: "rv",
 	expr: &ruleRefExpr{
-	pos: position{line: 90, col: 28, offset: 1771},
+	pos: position{line: 86, col: 28, offset: 1682},
 	name: "Expr",
 },
 },
@@ -522,42 +522,42 @@ var g = &grammar {
 },
 {
 	name: "ListExpr",
-	pos: position{line: 94, col: 1, offset: 1798},
+	pos: position{line: 90, col: 1, offset: 1709},
 	expr: &actionExpr{
-	pos: position{line: 94, col: 13, offset: 1810},
+	pos: position{line: 90, col: 13, offset: 1721},
 	run: (*parser).callonListExpr1,
 	expr: &seqExpr{
-	pos: position{line: 94, col: 13, offset: 1810},
+	pos: position{line: 90, col: 13, offset: 1721},
 	exprs: []interface{}{
 &ruleRefExpr{
-	pos: position{line: 94, col: 13, offset: 1810},
+	pos: position{line: 90, col: 13, offset: 1721},
 	name: "_",
 },
 &ruleRefExpr{
-	pos: position{line: 94, col: 15, offset: 1812},
+	pos: position{line: 90, col: 15, offset: 1723},
 	name: "LPAREN",
 },
 &ruleRefExpr{
-	pos: position{line: 94, col: 22, offset: 1819},
+	pos: position{line: 90, col: 22, offset: 1730},
 	name: "_",
 },
 &labeledExpr{
-	pos: position{line: 94, col: 24, offset: 1821},
+	pos: position{line: 90, col: 24, offset: 1732},
 	label: "more",
 	expr: &zeroOrMoreExpr{
-	pos: position{line: 94, col: 29, offset: 1826},
+	pos: position{line: 90, col: 29, offset: 1737},
 	expr: &ruleRefExpr{
-	pos: position{line: 94, col: 29, offset: 1826},
+	pos: position{line: 90, col: 29, offset: 1737},
 	name: "WhitespaceThenExpr",
 },
 },
 },
 &ruleRefExpr{
-	pos: position{line: 94, col: 49, offset: 1846},
+	pos: position{line: 90, col: 49, offset: 1757},
 	name: "_",
 },
 &ruleRefExpr{
-	pos: position{line: 94, col: 51, offset: 1848},
+	pos: position{line: 90, col: 51, offset: 1759},
 	name: "RPAREN",
 },
 	},
@@ -566,24 +566,24 @@ var g = &grammar {
 },
 {
 	name: "QuotingExpr",
-	pos: position{line: 104, col: 1, offset: 2014},
+	pos: position{line: 100, col: 1, offset: 1925},
 	expr: &choiceExpr{
-	pos: position{line: 105, col: 5, offset: 2035},
+	pos: position{line: 101, col: 5, offset: 1946},
 	alternatives: []interface{}{
 &ruleRefExpr{
-	pos: position{line: 105, col: 5, offset: 2035},
+	pos: position{line: 101, col: 5, offset: 1946},
 	name: "QuotedExpr",
 },
 &ruleRefExpr{
-	pos: position{line: 106, col: 5, offset: 2050},
+	pos: position{line: 102, col: 5, offset: 1961},
 	name: "QuasiQuotedExpr",
 },
 &ruleRefExpr{
-	pos: position{line: 107, col: 5, offset: 2070},
+	pos: position{line: 103, col: 5, offset: 1981},
 	name: "SplicingUnquotedExpr",
 },
 &ruleRefExpr{
-	pos: position{line: 108, col: 5, offset: 2095},
+	pos: position{line: 104, col: 5, offset: 2006},
 	name: "UnquotedExpr",
 },
 	},
@@ -591,27 +591,27 @@ var g = &grammar {
 },
 {
 	name: "QuotedExpr",
-	pos: position{line: 111, col: 1, offset: 2111},
+	pos: position{line: 107, col: 1, offset: 2022},
 	expr: &actionExpr{
-	pos: position{line: 111, col: 15, offset: 2125},
+	pos: position{line: 107, col: 15, offset: 2036},
 	run: (*parser).callonQuotedExpr1,
 	expr: &seqExpr{
-	pos: position{line: 111, col: 15, offset: 2125},
+	pos: position{line: 107, col: 15, offset: 2036},
 	exprs: []interface{}{
 &litMatcher{
-	pos: position{line: 111, col: 15, offset: 2125},
+	pos: position{line: 107, col: 15, offset: 2036},
 	val: "'",
 	ignoreCase: false,
 },
 &ruleRefExpr{
-	pos: position{line: 111, col: 19, offset: 2129},
+	pos: position{line: 107, col: 19, offset: 2040},
 	name: "_",
 },
 &labeledExpr{
-	pos: position{line: 111, col: 21, offset: 2131},
+	pos: position{line: 107, col: 21, offset: 2042},
 	label: "rv",
 	expr: &ruleRefExpr{
-	pos: position{line: 111, col: 24, offset: 2134},
+	pos: position{line: 107, col: 24, offset: 2045},
 	name: "Expr",
 },
 },
@@ -621,27 +621,27 @@ var g = &grammar {
 },
 {
 	name: "QuasiQuotedExpr",
-	pos: position{line: 115, col: 1, offset: 2203},
+	pos: position{line: 111, col: 1, offset: 2114},
 	expr: &actionExpr{
-	pos: position{line: 115, col: 20, offset: 2222},
+	pos: position{line: 111, col: 20, offset: 2133},
 	run: (*parser).callonQuasiQuotedExpr1,
 	expr: &seqExpr{
-	pos: position{line: 115, col: 20, offset: 2222},
+	pos: position{line: 111, col: 20, offset: 2133},
 	exprs: []interface{}{
 &litMatcher{
-	pos: position{line: 115, col: 20, offset: 2222},
+	pos: position{line: 111, col: 20, offset: 2133},
 	val: "`",
 	ignoreCase: false,
 },
 &ruleRefExpr{
-	pos: position{line: 115, col: 24, offset: 2226},
+	pos: position{line: 111, col: 24, offset: 2137},
 	name: "_",
 },
 &labeledExpr{
-	pos: position{line: 115, col: 26, offset: 2228},
+	pos: position{line: 111, col: 26, offset: 2139},
 	label: "rv",
 	expr: &ruleRefExpr{
-	pos: position{line: 115, col: 29, offset: 2231},
+	pos: position{line: 111, col: 29, offset: 2142},
 	name: "Expr",
 },
 },
@@ -651,27 +651,27 @@ var g = &grammar {
 },
 {
 	name: "UnquotedExpr",
-	pos: position{line: 119, col: 1, offset: 2305},
+	pos: position{line: 115, col: 1, offset: 2216},
 	expr: &actionExpr{
-	pos: position{line: 119, col: 17, offset: 2321},
+	pos: position{line: 115, col: 17, offset: 2232},
 	run: (*parser).callonUnquotedExpr1,
 	expr: &seqExpr{
-	pos: position{line: 119, col: 17, offset: 2321},
+	pos: position{line: 115, col: 17, offset: 2232},
 	exprs: []interface{}{
 &litMatcher{
-	pos: position{line: 119, col: 17, offset: 2321},
+	pos: position{line: 115, col: 17, offset: 2232},
 	val: ",",
 	ignoreCase: false,
 },
 &ruleRefExpr{
-	pos: position{line: 119, col: 21, offset: 2325},
+	pos: position{line: 115, col: 21, offset: 2236},
 	name: "_",
 },
 &labeledExpr{
-	pos: position{line: 119, col: 23, offset: 2327},
+	pos: position{line: 115, col: 23, offset: 2238},
 	label: "rv",
 	expr: &ruleRefExpr{
-	pos: position{line: 119, col: 26, offset: 2330},
+	pos: position{line: 115, col: 26, offset: 2241},
 	name: "Expr",
 },
 },
@@ -681,27 +681,27 @@ var g = &grammar {
 },
 {
 	name: "SplicingUnquotedExpr",
-	pos: position{line: 123, col: 1, offset: 2401},
+	pos: position{line: 119, col: 1, offset: 2312},
 	expr: &actionExpr{
-	pos: position{line: 123, col: 25, offset: 2425},
+	pos: position{line: 119, col: 25, offset: 2336},
 	run: (*parser).callonSplicingUnquotedExpr1,
 	expr: &seqExpr{
-	pos: position{line: 123, col: 25, offset: 2425},
+	pos: position{line: 119, col: 25, offset: 2336},
 	exprs: []interface{}{
 &litMatcher{
-	pos: position{line: 123, col: 25, offset: 2425},
+	pos: position{line: 119, col: 25, offset: 2336},
 	val: ",@",
 	ignoreCase: false,
 },
 &ruleRefExpr{
-	pos: position{line: 123, col: 30, offset: 2430},
+	pos: position{line: 119, col: 30, offset: 2341},
 	name: "_",
 },
 &labeledExpr{
-	pos: position{line: 123, col: 32, offset: 2432},
+	pos: position{line: 119, col: 32, offset: 2343},
 	label: "rv",
 	expr: &ruleRefExpr{
-	pos: position{line: 123, col: 35, offset: 2435},
+	pos: position{line: 119, col: 35, offset: 2346},
 	name: "Expr",
 },
 },
@@ -711,11 +711,11 @@ var g = &grammar {
 },
 {
 	name: "EOF",
-	pos: position{line: 127, col: 1, offset: 2515},
+	pos: position{line: 123, col: 1, offset: 2426},
 	expr: &notExpr{
-	pos: position{line: 127, col: 8, offset: 2522},
+	pos: position{line: 123, col: 8, offset: 2433},
 	expr: &anyMatcher{
-	line: 127, col: 9, offset: 2523,
+	line: 123, col: 9, offset: 2434,
 },
 },
 },
@@ -790,11 +790,7 @@ func (p *parser) callonReal1() (interface{}, error) {
 }
 
 func (c *current) onInteger1() (interface{}, error) {
-  n, err := strconv.ParseInt(string(c.text), 10, 64)
-  if err != nil {
-    return nil, err
-  }
-  return integer.Integer(n), nil
+  return integer.Parse(string(c.text))
 }
 
 func (p *parser) callonInteger1() (interface{}, error) {
