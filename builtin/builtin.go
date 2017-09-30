@@ -28,6 +28,7 @@ import (
 	"github.com/steinarvk/heisenlisp/value/symbol"
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
+	"github.com/steinarvk/heisenlisp/value/unknowns/numinrange"
 	"github.com/steinarvk/heisenlisp/value/unknowns/typed"
 )
 
@@ -721,6 +722,65 @@ func BindDefaults(e types.Env) {
 		}
 
 		return typed.New(typenames...), nil
+	})
+
+	parseKeywords := func(xs []types.Value) (map[string]types.Value, error) {
+		if len(xs)%2 != 0 {
+			return nil, fmt.Errorf("parsing keywords from odd-numbered arguments: %v", xs)
+		}
+
+		rv := map[string]types.Value{}
+		for i := 0; i < len(xs); i += 2 {
+			name, err := symbol.Name(xs[i])
+			if err != nil {
+				return nil, fmt.Errorf("parsing keywords: %v", err)
+			}
+
+			rv[name] = xs[i+1]
+		}
+
+		return rv, nil
+	}
+
+	Values(e, "number-in-range", func(xs []types.Value) (types.Value, error) {
+		args, err := parseKeywords(xs)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO check for unused arguments
+
+		var lowVal, highVal types.Value
+		var lowIncl, highIncl bool
+
+		if val, ok := args["from"]; ok {
+			lowVal = val
+			lowIncl = true
+		} else if val, ok := args["above"]; ok {
+			lowVal = val
+			lowIncl = false
+		}
+
+		if val, ok := args["to"]; ok {
+			highVal = val
+			highIncl = true
+		} else if val, ok := args["below"]; ok {
+			highVal = val
+			highIncl = false
+		}
+
+		low, ok := lowVal.(types.Numeric)
+		if !ok {
+			return nil, fmt.Errorf("invalid numeric bound: %v", lowVal)
+		}
+
+		high, ok := highVal.(types.Numeric)
+		if !ok {
+			return nil, fmt.Errorf("invalid numeric bound: %v", highVal)
+		}
+
+		// TODO types
+		return numinrange.New(low, high, lowIncl, highIncl, nil)
 	})
 
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {

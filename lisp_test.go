@@ -224,6 +224,14 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(floating-point? 3.14)`,
 		`(string? "hello")`,
 		`(symbol? 'hello)`,
+		`(_maybe? (= (number-in-range 'from 100 'to 200) 200))`,
+		`(not (= (number-in-range 'from 100 'below 200) 200))`,
+		`(_maybe? (= (number-in-range 'from 100 'below 200) 150))`,
+		`(_maybe? (= (number-in-range 'from 100 'below 200) 100))`,
+		`(_maybe? (= (number-in-range 'from 100 'below 200) 100))`,
+		`(not (= (number-in-range 'above 100 'below 200) 100))`,
+		`(not (= (number-in-range 'above 100 'below 200) 50))`,
+		`(_maybe? (= (number-in-range 'from 0 'to 1) (number-in-range 'from 0.5 'to 1.5)))`,
 	}
 
 	for i, s := range exprs {
