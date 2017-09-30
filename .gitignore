@@ -6,6 +6,8 @@
 /cover.out
 .heisenlisp_history
 /secrets/
+/notes/
+/junk/
 Dockerfile
 build-docker.sh
 deploy-docker.sh
