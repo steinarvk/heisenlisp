@@ -52,7 +52,7 @@ type Env interface {
 }
 
 type Numeric interface {
-	String() string
+	Value
 	AsInt64() (int64, bool)
 	AsDouble() (float64, bool)
 }

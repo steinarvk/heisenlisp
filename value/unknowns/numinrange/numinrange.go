@@ -11,7 +11,7 @@ import (
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 )
 
-const TypeName = "number-range"
+const TypeName = "number-in-range"
 
 var _ types.Unknown = &numinrangeValue{}
 
@@ -83,4 +83,12 @@ func (n *numinrangeValue) Intersects(v types.Value) (bool, error) {
 	}
 
 	panic(fmt.Sprintf("cannot check intersection between %v and %v", n, v))
+}
+
+func ToRange(v types.Value) (*numrange.Range, bool) {
+	cast, ok := v.(*numinrangeValue)
+	if !ok {
+		return nil, false
+	}
+	return cast.r, true
 }

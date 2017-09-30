@@ -1,6 +1,11 @@
 package lisperr
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var DivisionByZero = errors.New("division by zero")
 
 type UnboundVariable string
 

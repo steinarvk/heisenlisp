@@ -14,30 +14,67 @@ import (
 
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
+	"github.com/steinarvk/heisenlisp/value/unknowns/numinrange"
 )
+
+func wrappedWithRanges(onNumerics func(a, b types.Numeric) (interface{}, error), onRanges func(a, b *numrange.Range) (interface{}, error)) func(a, b types.Value) (interface{}, error) {
+	return func(a, b types.Value) (interface{}, error) {
+		return wrapRangeOrNumeric(a, b, onNumerics, onRanges)
+	}
+}
+
+func wrapRangeOrNumeric(a, b types.Value, onNumerics func(a, b types.Numeric) (interface{}, error), onRanges func(a, b *numrange.Range) (interface{}, error)) (interface{}, error) {
+	rangeA, rA := numinrange.ToRange(a)
+	rangeB, rB := numinrange.ToRange(b)
+	numericA, nA := a.(types.Numeric)
+	numericB, nB := b.(types.Numeric)
+
+	switch {
+	case rA && rB: // both ranges
+		return onRanges(rangeA, rangeB)
+	case rA && nB:
+		return onRanges(rangeA, numrange.NewSingleton(numericB))
+	case nA && rB:
+		return onRanges(numrange.NewSingleton(numericA), rangeB)
+	case nA && nB:
+		return onNumerics(numericA, numericB)
+	case !rA && !rB:
+		return nil, fmt.Errorf("neigher range nor numeric: %v", a)
+	default:
+		return nil, fmt.Errorf("neigher range nor numeric: %v", b)
+	}
+}
 
 func wrapBinary(a, b types.Value, f func(a, b types.Value) (types.Value, error)) (types.Value, error) {
 	av, ok1 := anyof.PossibleValues(a)
 	bv, ok2 := anyof.PossibleValues(b)
-	if !ok1 || !ok2 {
-		// error?
-		return fullyunknown.Value, nil
-	}
-	if len(av) > 1 || len(bv) > 1 {
-		var rv []types.Value
-		for _, ra := range av {
-			for _, rb := range bv {
-				res, err := f(ra, rb)
-				if err != nil {
-					return nil, err
+	if ok1 && ok2 {
+		if len(av) > 1 || len(bv) > 1 {
+			var rv []types.Value
+			for _, ra := range av {
+				for _, rb := range bv {
+					res, err := f(ra, rb)
+					if err != nil {
+						return nil, err
+					}
+					rv = append(rv, res)
 				}
-				rv = append(rv, res)
 			}
+			return anyof.New(rv)
 		}
-		return anyof.New(rv)
 	}
 
 	return f(a, b)
+}
+
+func castingToValue(f func(a, b types.Value) (interface{}, error)) func(a, b types.Value) (types.Value, error) {
+	return func(a, b types.Value) (types.Value, error) {
+		rv, err := f(a, b)
+		if err != nil {
+			return nil, err
+		}
+		return rv.(types.Value), nil
+	}
 }
 
 func toBinaryNumericValues(f func(types.Numeric, types.Numeric) (interface{}, error)) func(types.Value, types.Value) (types.Value, error) {
@@ -115,14 +152,20 @@ func fromInt64(n int64) types.Value {
 	return integer.FromInt64(n)
 }
 
-var binaryPlus = toBinaryNumericValues(numtower.BinaryTowerFunc{
-	OnInt64s: func(a, b int64) (interface{}, error) {
-		return integer.FromInt64(a + b), nil
-	},
-	OnFloat64s: func(a, b float64) (interface{}, error) {
-		return real.FromFloat64(a + b), nil
-	},
-}.Call)
+var binaryPlus func(a, b types.Value) (types.Value, error)
+
+func init() {
+	binaryPlus = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
+		OnInt64s: func(a, b int64) (interface{}, error) {
+			return integer.FromInt64(a + b), nil
+		},
+		OnFloat64s: func(a, b float64) (interface{}, error) {
+			return real.FromFloat64(a + b), nil
+		},
+	}.Call, func(a, b *numrange.Range) (interface{}, error) {
+		return rangeAdd(a, b)
+	}))
+}
 
 func BinaryPlus(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
@@ -132,14 +175,20 @@ func BinaryPlus(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, binaryPlus)
 }
 
-var binaryMinus = toBinaryNumericValues(numtower.BinaryTowerFunc{
-	OnInt64s: func(a, b int64) (interface{}, error) {
-		return integer.FromInt64(a - b), nil
-	},
-	OnFloat64s: func(a, b float64) (interface{}, error) {
-		return real.FromFloat64(a - b), nil
-	},
-}.Call)
+var binaryMinus func(a, b types.Value) (types.Value, error)
+
+func init() {
+	binaryMinus = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
+		OnInt64s: func(a, b int64) (interface{}, error) {
+			return integer.FromInt64(a - b), nil
+		},
+		OnFloat64s: func(a, b float64) (interface{}, error) {
+			return real.FromFloat64(a - b), nil
+		},
+	}.Call, func(a, b *numrange.Range) (interface{}, error) {
+		return rangeSub(a, b)
+	}))
+}
 
 func BinaryMinus(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
@@ -149,14 +198,20 @@ func BinaryMinus(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, binaryMinus)
 }
 
-var binaryMultiply = toBinaryNumericValues(numtower.BinaryTowerFunc{
-	OnInt64s: func(a, b int64) (interface{}, error) {
-		return integer.FromInt64(a * b), nil
-	},
-	OnFloat64s: func(a, b float64) (interface{}, error) {
-		return real.FromFloat64(a * b), nil
-	},
-}.Call)
+var binaryMultiply func(a, b types.Value) (types.Value, error)
+
+func init() {
+	binaryMultiply = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
+		OnInt64s: func(a, b int64) (interface{}, error) {
+			return integer.FromInt64(a * b), nil
+		},
+		OnFloat64s: func(a, b float64) (interface{}, error) {
+			return real.FromFloat64(a * b), nil
+		},
+	}.Call, func(a, b *numrange.Range) (interface{}, error) {
+		return rangeMul(a, b)
+	}))
+}
 
 func BinaryMultiply(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {

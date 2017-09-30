@@ -232,6 +232,33 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(not (= (number-in-range 'above 100 'below 200) 100))`,
 		`(not (= (number-in-range 'above 100 'below 200) 50))`,
 		`(_maybe? (= (number-in-range 'from 0 'to 1) (number-in-range 'from 0.5 'to 1.5)))`,
+		`(_atom-eq? "#number-in-range([0,200])" (_to-string
+		   (+ (number-in-range 'from 0 'to 100)
+			    (number-in-range 'from 0 'to 100))))`,
+		`(_atom-eq? "#number-in-range([100,200])" (_to-string
+		   (+ (number-in-range 'from 50 'to 100)
+			    (number-in-range 'from 50 'to 100))))`,
+		`(_atom-eq? "#number-in-range((100,200])" (_to-string
+		   (+ (number-in-range 'above 50 'to 100)
+			    (number-in-range 'from 50 'to 100))))`,
+		`(_atom-eq? "#number-in-range([100,200))" (_to-string
+		   (+ (number-in-range 'from 50 'to 100)
+			    (number-in-range 'from 50 'below 100))))`,
+		`(_atom-eq? "#number-in-range([-51,58])" (_to-string
+		   (- (number-in-range 'from 50 'to 100)
+			    (number-in-range 'from 42 'to 101))))`,
+		`(_atom-eq? "#number-in-range([2100,10100])" (_to-string
+		   (* (number-in-range 'from 50 'to 100)
+			    (number-in-range 'from 42 'to 101))))`,
+		`(_atom-eq? "#number-in-range([2100,10100))" (_to-string
+		   (* (number-in-range 'from 50 'below 100)
+			    (number-in-range 'from 42 'to 101))))`,
+		`(_atom-eq? "#number-in-range([-5050,10100])" (_to-string
+		   (* (number-in-range 'from -50 'to 100)
+			    (number-in-range 'from 42 'to 101))))`,
+		`(_atom-eq? "#number-in-range([-13869,10050])" (_to-string
+		   (* (number-in-range 'from -50 'to 69)
+			    (number-in-range 'from -201 'to 101))))`,
 	}
 
 	for i, s := range exprs {

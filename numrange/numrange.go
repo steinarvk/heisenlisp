@@ -12,6 +12,20 @@ type Range struct {
 	upperBoundInclusive bool
 }
 
+func (r *Range) LowerBound() types.Numeric { return r.lowerBound }
+func (r *Range) UpperBound() types.Numeric { return r.upperBound }
+func (r *Range) LowerBoundInclusive() bool { return r.lowerBoundInclusive }
+func (r *Range) UpperBoundInclusive() bool { return r.upperBoundInclusive }
+
+func NewSingleton(x types.Numeric) *Range {
+	return &Range{
+		upperBound:          x,
+		lowerBound:          x,
+		upperBoundInclusive: true,
+		lowerBoundInclusive: true,
+	}
+}
+
 func NewBelow(x types.Numeric, inclusive bool) *Range {
 	return &Range{
 		upperBound:          x,
