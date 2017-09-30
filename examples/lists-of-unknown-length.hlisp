@@ -24,8 +24,3 @@
 (_assert! "true" (any? (is-equal-to 2) one-of-two-lists))
 (_assert! "maybe" (any? (is-equal-to 4) one-of-two-lists))
 (_assert! "false" (any? (is-equal-to 5) one-of-two-lists))
-
-;; Slightly unclear what these should be; since the function
-;; calls might have resulted in errors.
-(_assert! "unknown" (length cons-structure-with-unknown-tail))
-(_assert! "maybe" (any? (is-equal-to 2) list-with-unknown))

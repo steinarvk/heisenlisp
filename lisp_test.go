@@ -404,7 +404,7 @@ func TestExamples(t *testing.T) {
 	dirname := "./examples/"
 
 	worksInProgress := []string{
-		"lists-of-unknown-length.hlisp",
+		"lists-of-unknown-length-unclear.hlisp",
 	}
 
 	filenames, err := listLispFilesInOrder(dirname)

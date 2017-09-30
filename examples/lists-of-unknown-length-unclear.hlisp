@@ -1,0 +1,13 @@
+(set! normal-list (cons 1 (cons 2 (cons 3 nil))))
+(set! list-with-unknown (cons 1 (cons unknown (cons 3 nil))))
+(set! cons-structure-with-unknown-tail (cons 1 (cons 2 (cons 3 unknown))))
+(set! one-of-two-lists (cons 1 (cons 2 (cons 3 (any-of (cons 4 nil) nil)))))
+
+(defun! is-equal-to (n) (lambda (x) (= x n)))
+
+;; Slightly unclear what these should be; since the function
+;; calls might have resulted in errors.
+(_assert! "maybe" (any? (is-equal-to 2) list-with-unknown))
+
+;; This should be a typed unknown at least.
+(_assert! "unknown" (length cons-structure-with-unknown-tail))

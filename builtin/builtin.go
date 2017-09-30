@@ -15,6 +15,7 @@ import (
 	"github.com/steinarvk/heisenlisp/equality"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/lisperr"
+	"github.com/steinarvk/heisenlisp/logic"
 	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/purity"
 	"github.com/steinarvk/heisenlisp/reductions"
@@ -588,84 +589,61 @@ func BindDefaults(e types.Env) {
 	})
 
 	Binary(e, "any?", func(f, l types.Value) (types.Value, error) {
-		xs, err := expr.UnwrapList(l)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(xs) == 0 {
-			return boolean.False, nil
-		}
-
 		callable, ok := f.(types.Callable)
 		if !ok {
 			return nil, errors.New("not a callable")
 		}
 
-		sawMaybe := false
-
-		for _, x := range xs {
-			result, err := callable.Call([]types.Value{x})
+		cb := func(a, b types.Value) (types.Value, bool, error) {
+			rv, err := callable.Call([]types.Value{b})
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
-			tv, err := unknown.TruthValue(result)
+			either, err := logic.TernaryOrValues(a, rv)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
-			switch tv {
+			switch either {
+			case types.False:
+				return boolean.False, false, nil
 			case types.True:
-				return boolean.True, nil
+				return boolean.True, true, nil
 			case types.Maybe:
-				sawMaybe = true
+				return anyof.MaybeValue, false, nil
 			}
+			panic("impossible")
 		}
 
-		if sawMaybe {
-			return unknown.MaybeValue, nil
-		}
-		return boolean.False, nil
+		return reductions.FoldLeftShortcircuit(cb, boolean.False, l)
 	})
 
 	Binary(e, "all?", func(f, l types.Value) (types.Value, error) {
-		xs, err := expr.UnwrapList(l)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(xs) == 0 {
-			return boolean.True, nil
-		}
-
 		callable, ok := f.(types.Callable)
 		if !ok {
 			return nil, errors.New("not a callable")
 		}
 
-		sawMaybe := false
-
-		for _, x := range xs {
-			result, err := callable.Call([]types.Value{x})
+		cb := func(a, b types.Value) (types.Value, bool, error) {
+			rv, err := callable.Call([]types.Value{b})
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
-			tv, err := unknown.TruthValue(result)
+			both, err := logic.TernaryAndValues(a, rv)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
-			switch tv {
+			switch both {
 			case types.False:
-				return boolean.False, nil
+				return boolean.False, true, nil
+			case types.True:
+				return boolean.True, false, nil
 			case types.Maybe:
-				sawMaybe = true
+				return anyof.MaybeValue, false, nil
 			}
+			panic("impossible")
 		}
 
-		if sawMaybe {
-			return unknown.MaybeValue, nil
-		}
-
-		return boolean.True, nil
+		return reductions.FoldLeftShortcircuit(cb, boolean.True, l)
 	})
 
 	Ternary(e, "reduce-left", func(f, initial, l types.Value) (types.Value, error) {
@@ -704,8 +682,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "list?", func(l types.Value) (types.Value, error) {
-		ok := reductions.Foldable(l)
-		return boolean.FromBool(ok), nil
+		return reductions.Foldable(l), nil
 	})
 
 	Ternary(e, "fold-left", func(f, initial, l types.Value) (types.Value, error) {

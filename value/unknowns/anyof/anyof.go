@@ -200,3 +200,11 @@ func PossibleValues(v types.Value) ([]types.Value, bool) {
 
 	return a.possibleValues(), true
 }
+
+func IsMaybe(v types.Value) bool {
+	rv, ok := v.(anyOf)
+	if !ok {
+		return false
+	}
+	return rv.isMaybe()
+}

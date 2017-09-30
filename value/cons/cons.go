@@ -10,6 +10,8 @@ import (
 	"github.com/steinarvk/heisenlisp/value/null"
 )
 
+const TypeName = "cons"
+
 var (
 	metricNewCons = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -34,7 +36,7 @@ type consValue struct {
 	cdr types.Value
 }
 
-func (_ *consValue) TypeName() string { return "cons" }
+func (_ *consValue) TypeName() string { return TypeName }
 func (c *consValue) Falsey() bool     { return false }
 
 func (c *consValue) String() string {
