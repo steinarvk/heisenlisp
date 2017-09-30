@@ -6,7 +6,7 @@
 (_assert! "3" (length normal-list))
 (_assert! "3" (length list-with-unknown))
 
-(_assert! "#any-of(3 4)" (length one-of-two-lists))
+(_assert! "#any-of(4 3)" (length one-of-two-lists))
 
 (_assert! "true" (list? normal-list))
 (_assert! "true" (list? list-with-unknown))
