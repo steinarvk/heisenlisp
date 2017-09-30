@@ -7,6 +7,10 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+const (
+	TypeName = "function"
+)
+
 var (
 	metricNewBuiltinFunction = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -43,7 +47,7 @@ func New(name string, pure bool, f func([]types.Value) (types.Value, error)) typ
 
 func (f *builtinFunctionValue) IsPure() bool { return f.pure }
 
-func (_ *builtinFunctionValue) TypeName() string { return "function" }
+func (_ *builtinFunctionValue) TypeName() string { return TypeName }
 func (f *builtinFunctionValue) Call(params []types.Value) (types.Value, error) {
 	metricBuiltinFunctionCall.Inc()
 	return f.function(params)

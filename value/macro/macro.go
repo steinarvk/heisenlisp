@@ -10,6 +10,8 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+const TypeName = "macro"
+
 var (
 	metricNewLispMacro = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -99,7 +101,7 @@ func New(env types.Env, name string, formalParams types.Value, body []types.Valu
 	return rv, nil
 }
 
-func (_ *macroValue) TypeName() string { return "macro" }
+func (_ *macroValue) TypeName() string { return TypeName }
 func (f *macroValue) errorprefix() string {
 	if f.name == "" {
 		return "(anonymous macro): "

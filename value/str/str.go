@@ -8,6 +8,8 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+const TypeName = "string"
+
 var (
 	metricNewString = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -58,7 +60,7 @@ func (s stringValue) String() string {
 func (s stringValue) Eval(_ types.Env) (types.Value, error) { return s, nil }
 
 func (s stringValue) Falsey() bool     { return s == "" }
-func (_ stringValue) TypeName() string { return "string" }
+func (_ stringValue) TypeName() string { return TypeName }
 
 func ToString(v types.Value) (string, error) {
 	rv, ok := v.(stringValue)

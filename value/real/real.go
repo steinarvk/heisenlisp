@@ -6,6 +6,8 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+const TypeName = "floating-point"
+
 type realValue float64
 
 func (v realValue) AtomEquals(other types.Atom) bool {
@@ -21,7 +23,7 @@ func (v realValue) Eval(_ types.Env) (types.Value, error) { return v, nil }
 
 func (v realValue) Falsey() bool { return v == 0 }
 
-func (v realValue) TypeName() string { return "floating-point" }
+func (v realValue) TypeName() string { return TypeName }
 
 func (v realValue) AsInt64() (int64, bool) {
 	return 0, false

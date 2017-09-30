@@ -3,20 +3,25 @@ package anyof
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
+	"github.com/steinarvk/heisenlisp/value/unknowns/typed"
 )
+
+const TypeName = "any-of"
 
 const (
 	maxAnyOfElements = 100
 )
 
 type anyOf struct {
-	vals []types.Value
+	vals  []types.Value
+	types []string
 }
 
 func (a anyOf) isMaybe() bool {
@@ -51,7 +56,11 @@ func (a anyOf) String() string {
 
 func (a anyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
 func (a anyOf) Falsey() bool                          { return false }
-func (_ anyOf) TypeName() string                      { return "any-of" }
+func (_ anyOf) TypeName() string                      { return TypeName }
+
+func (a anyOf) ActualTypeName() ([]string, bool) {
+	return a.types, true
+}
 
 func (a anyOf) possibleValues() []types.Value {
 	return a.vals
@@ -60,6 +69,10 @@ func (a anyOf) possibleValues() []types.Value {
 func (a anyOf) Intersects(v types.Value) (bool, error) {
 	if fullyunknown.Is(v) {
 		return true, nil
+	}
+
+	if typed.Is(v) {
+		return v.(types.Unknown).Intersects(a)
 	}
 
 	xs, ok1 := PossibleValues(a)
@@ -91,14 +104,16 @@ func (a anyOf) Intersects(v types.Value) (bool, error) {
 func newRaw(xs []types.Value) types.Value {
 	rv := anyOf{}
 
-	// todo: do this more efficiently. n
+	tps := map[string]struct{}{}
 
 	addIfNew := func(singleValue types.Value) {
+		// todo: do this more efficiently.
 		for _, old := range rv.vals {
 			if expr.AtomEquals(old, singleValue) {
 				return
 			}
 		}
+		tps[singleValue.TypeName()] = struct{}{}
 		rv.vals = append(rv.vals, singleValue)
 	}
 
@@ -112,6 +127,14 @@ func newRaw(xs []types.Value) types.Value {
 		}
 		addIfNew(x)
 	}
+
+	var typesSlice []string
+	for k := range tps {
+		typesSlice = append(typesSlice, k)
+	}
+	sort.Strings(typesSlice)
+
+	rv.types = typesSlice
 
 	return rv
 }

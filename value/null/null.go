@@ -2,6 +2,8 @@ package null
 
 import "github.com/steinarvk/heisenlisp/types"
 
+const TypeName = "nil"
+
 type nilValue struct{}
 
 func IsNil(v types.Value) bool {
@@ -20,4 +22,4 @@ func (v nilValue) AtomEquals(other types.Atom) bool {
 	_, ok := other.(nilValue)
 	return ok
 }
-func (_ nilValue) TypeName() string { return "nil" }
+func (_ nilValue) TypeName() string { return TypeName }

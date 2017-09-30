@@ -1,0 +1,26 @@
+(defun! bool? (x) (= 'bool (type x)))
+(defun! _bool? (x) (= 'bool (_type x)))
+
+(defun! function? (x) (= 'function (type x)))
+(defun! _function? (x) (= 'function (_type x)))
+
+(defun! cons? (x) (= 'cons (type x)))
+(defun! _cons? (x) (= 'cons (_type x)))
+
+(defun! integer? (x) (= 'integer (type x)))
+(defun! _integer? (x) (= 'integer (_type x)))
+
+(defun! macro? (x) (= 'macro (type x)))
+(defun! _macro? (x) (= 'macro (_type x)))
+
+(defun! nil? (x) (= 'nil (type x)))
+(defun! _nil? (x) (= 'nil (_type x)))
+
+(defun! floating-point? (x) (= 'floating-point (type x)))
+(defun! _floating-point? (x) (= 'floating-point (_type x)))
+
+(defun! string? (x) (= 'string (type x)))
+(defun! _string? (x) (= 'string (_type x)))
+
+(defun! symbol? (x) (= 'symbol (type x)))
+(defun! _symbol? (x) (= 'symbol (_type x)))

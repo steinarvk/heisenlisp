@@ -28,6 +28,7 @@ import (
 	"github.com/steinarvk/heisenlisp/value/symbol"
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
+	"github.com/steinarvk/heisenlisp/value/unknowns/typed"
 )
 
 var (
@@ -708,8 +709,48 @@ func BindDefaults(e types.Env) {
 		return rv, nil
 	})
 
+	Values(e, "unknown-of-type", func(xs []types.Value) (types.Value, error) {
+		var typenames []string
+
+		for _, x := range xs {
+			name, err := symbol.Name(x)
+			if err != nil {
+				return nil, err
+			}
+			typenames = append(typenames, name)
+		}
+
+		return typed.New(typenames...), nil
+	})
+
 	Values(e, "any-of", func(xs []types.Value) (types.Value, error) {
 		return anyof.New(xs)
+	})
+
+	Unary(e, "type", func(v types.Value) (types.Value, error) {
+		unk, ok := v.(types.Unknown)
+		if !ok {
+			return symbol.New(v.TypeName()), nil
+		}
+
+		typenames, ok := unk.ActualTypeName()
+		if !ok {
+			return typed.New(symbol.TypeName), nil
+		}
+
+		if len(typenames) == 0 {
+			return nil, errors.New("no types returned")
+		}
+
+		if len(typenames) == 1 {
+			return symbol.New(typenames[0]), nil
+		}
+
+		var typeSyms []types.Value
+		for _, typename := range typenames {
+			typeSyms = append(typeSyms, symbol.New(typename))
+		}
+		return anyof.New(typeSyms)
 	})
 
 	Unary(e, "possible-values", func(v types.Value) (types.Value, error) {

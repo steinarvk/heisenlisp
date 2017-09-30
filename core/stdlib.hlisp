@@ -18,8 +18,6 @@
 (defun! zero? (n) (_atom-eq? 0 n))
 (set! remainder mod)
 
-(defun! nil? (x) (_atom-eq? nil x))
-
 (defun! first (xs) (car xs))
 (defun! second (xs) (car (cdr xs)))
 (defun! third (xs) (car (cdr (cdr xs))))
@@ -50,9 +48,6 @@
 
 (defmacro! unless (condition &rest body)
   `(if (not ,condition) (progn ,@body) nil))
-
-(defun! cons? (x) (= 'cons (type x)))
-(defun! _cons? (x) (= 'cons (_type x)))
 
 (defun! _maybe? (x)
   (and (= 'any-of (_type x))

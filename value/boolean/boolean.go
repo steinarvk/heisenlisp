@@ -6,6 +6,10 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+const (
+	TypeName = "bool"
+)
+
 type boolValue bool
 
 var (
@@ -23,7 +27,7 @@ func (b boolValue) AtomEquals(other types.Atom) bool {
 }
 
 func (b boolValue) Falsey() bool     { return !bool(b) }
-func (_ boolValue) TypeName() string { return "bool" }
+func (_ boolValue) TypeName() string { return TypeName }
 
 func (b boolValue) String() string {
 	if bool(b) {

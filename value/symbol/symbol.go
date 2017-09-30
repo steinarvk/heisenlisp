@@ -9,6 +9,10 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+const (
+	TypeName = "symbol"
+)
+
 var (
 	metricNewSymbol = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -67,7 +71,7 @@ func (i symbolValue) AtomEquals(other types.Atom) bool {
 	return o == i
 }
 
-func (_ symbolValue) TypeName() string { return "symbol" }
+func (_ symbolValue) TypeName() string { return TypeName }
 
 func Name(v types.Value) (string, error) {
 	rv, ok := v.(symbolValue)
