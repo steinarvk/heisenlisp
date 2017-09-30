@@ -14,7 +14,7 @@ const (
 
 var cmpNumerics = numtower.BinaryTowerFunc{
 	OnInt64s: func(a, b int64) (interface{}, error) {
-		diff := b - a
+		diff := a - b
 		switch {
 		case diff < 0:
 			return Less, nil
@@ -25,7 +25,7 @@ var cmpNumerics = numtower.BinaryTowerFunc{
 		}
 	},
 	OnFloat64s: func(a, b float64) (interface{}, error) {
-		diff := b - a
+		diff := a - b
 		switch {
 		case diff < 0:
 			return Less, nil

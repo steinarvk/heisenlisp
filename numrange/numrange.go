@@ -66,9 +66,11 @@ func (r *Range) String() string {
 }
 
 func (r *Range) Contains(n types.Numeric) bool {
+	// say [10,100] testing 20
 	if r.lowerBound != nil {
+		// compare(10, 20) = Less [lower bound is less]
 		switch numcmp.CompareOrPanic(r.lowerBound, n) {
-		case numcmp.Less:
+		case numcmp.Greater:
 			return false
 		case numcmp.Equal:
 			if !r.lowerBoundInclusive {
@@ -78,7 +80,7 @@ func (r *Range) Contains(n types.Numeric) bool {
 	}
 	if r.upperBound != nil {
 		switch numcmp.CompareOrPanic(n, r.upperBound) {
-		case numcmp.Less:
+		case numcmp.Greater:
 			return false
 		case numcmp.Equal:
 			if !r.upperBoundInclusive {
@@ -100,9 +102,9 @@ func (r *Range) strictestLowerBound(o *Range) (types.Numeric, bool) {
 		return r.lowerBound, r.lowerBoundInclusive
 	}
 	switch numcmp.CompareOrPanic(r.lowerBound, o.lowerBound) {
-	case numcmp.Less:
-		return r.lowerBound, r.lowerBoundInclusive
 	case numcmp.Greater:
+		return r.lowerBound, r.lowerBoundInclusive
+	case numcmp.Less:
 		return o.lowerBound, o.lowerBoundInclusive
 	default:
 		return r.lowerBound, r.lowerBoundInclusive && o.lowerBoundInclusive
@@ -120,9 +122,9 @@ func (r *Range) strictestUpperBound(o *Range) (types.Numeric, bool) {
 		return r.upperBound, r.upperBoundInclusive
 	}
 	switch numcmp.CompareOrPanic(r.upperBound, o.upperBound) {
-	case numcmp.Less:
-		return o.upperBound, o.upperBoundInclusive
 	case numcmp.Greater:
+		return o.upperBound, o.upperBoundInclusive
+	case numcmp.Less:
 		return r.upperBound, r.upperBoundInclusive
 	default:
 		return r.lowerBound, r.lowerBoundInclusive && o.lowerBoundInclusive
@@ -141,14 +143,14 @@ func (r *Range) Intersection(o *Range) *Range {
 			return nil
 		}
 		fallthrough
-	case numcmp.Greater:
+	case numcmp.Less:
 		return &Range{
 			lowerBound:          low,
 			upperBound:          high,
 			lowerBoundInclusive: lowIncl,
 			upperBoundInclusive: highIncl,
 		}
-	case numcmp.Less:
+	case numcmp.Greater:
 		return nil
 	}
 	panic("impossible")
