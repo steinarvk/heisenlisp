@@ -2,9 +2,25 @@
 package numcmp
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/numtower"
 	"github.com/steinarvk/heisenlisp/types"
 )
+
+var (
+	metricNumericComparisons = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "numeric_comparisons",
+			Help:      "Numeric comparisons made",
+		},
+		[]string{"type"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(metricNumericComparisons)
+}
 
 const (
 	Less    int = -1
@@ -14,6 +30,7 @@ const (
 
 var cmpNumerics = numtower.BinaryTowerFunc{
 	OnInt64s: func(a, b int64) (interface{}, error) {
+		metricNumericComparisons.WithLabelValues("int64").Inc()
 		diff := a - b
 		switch {
 		case diff < 0:
@@ -25,6 +42,7 @@ var cmpNumerics = numtower.BinaryTowerFunc{
 		}
 	},
 	OnFloat64s: func(a, b float64) (interface{}, error) {
+		metricNumericComparisons.WithLabelValues("float64").Inc()
 		diff := a - b
 		switch {
 		case diff < 0:
