@@ -1,0 +1,17 @@
+;; TODO: remove this from the main namespace.
+
+(defun! binary-inc (xs)
+  (reversed (binary-inc-reversed (reversed xs))))
+
+(defun! binary-inc-reversed (xs)
+  (if (empty? xs)
+      (list 1)
+      (if (= 0 (car xs))
+          (cons 1 (cdr xs))
+          (cons 0 (binary-inc-reversed (cdr xs))))))
+
+(defun! unary-n-times (n f x)
+  (if (= n 0) x (unary-n-times (- n 1) f (f x))))
+
+(defun! simple-integer-to-binary (n)
+  (reversed (unary-n-times n binary-inc-reversed (list 0))))
