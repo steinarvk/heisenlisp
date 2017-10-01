@@ -281,6 +281,9 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(not (= (number-in-range 'above 0) 0))`,
 		`(_maybe? (= (number-in-range 'below 0) -5))`,
 		`(not (= (number-in-range 'below 0) 5))`,
+		`(_maybe? (= (any-of 0 1) 0))`,
+		`(_maybe? (= (dec (any-of 0 1)) 0))`,
+		`(not (= (dec (dec (any-of 0 1))) 0))`,
 	}
 
 	for i, s := range exprs {
