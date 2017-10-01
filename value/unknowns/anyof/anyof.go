@@ -63,6 +63,8 @@ func (a anyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
 func (a anyOf) Falsey() bool                          { return false }
 func (_ anyOf) TypeName() string                      { return TypeName }
 
+func (_ anyOf) HasNontypeInfo() bool { return true }
+
 func (a anyOf) ActualTypeName() ([]string, bool) {
 	return a.types, true
 }

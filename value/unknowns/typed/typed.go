@@ -27,6 +27,8 @@ func (t typedUnknown) Eval(_ types.Env) (types.Value, error) { return t, nil }
 func (_ typedUnknown) Falsey() bool                          { return false }
 func (_ typedUnknown) TypeName() string                      { return TypeName }
 
+func (_ typedUnknown) HasNontypeInfo() bool { return false }
+
 func (t typedUnknown) ActualTypeName() ([]string, bool) {
 	return t.ts.Slice(), true
 }

@@ -18,6 +18,7 @@ type Value interface {
 
 type Unknown interface {
 	ActualTypeName() ([]string, bool)
+	HasNontypeInfo() bool
 	Intersects(Value) (bool, error)
 }
 

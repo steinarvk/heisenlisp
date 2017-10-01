@@ -50,6 +50,8 @@ func (n *numinrangeValue) Eval(_ types.Env) (types.Value, error) { return n, nil
 func (_ *numinrangeValue) Falsey() bool                          { return false }
 func (_ *numinrangeValue) TypeName() string                      { return TypeName }
 
+func (_ *numinrangeValue) HasNontypeInfo() bool { return true }
+
 func (n *numinrangeValue) ActualTypeName() ([]string, bool) {
 	return n.ts.Slice(), true
 }
@@ -59,8 +61,13 @@ func (n *numinrangeValue) Intersects(v types.Value) (bool, error) {
 		return false, nil
 	}
 
+	if unk, ok := v.(types.Unknown); ok && !unk.HasNontypeInfo() {
+		return true, nil
+	}
+
 	// We know there are intersections on a type level.
-	// That's necessary but not sufficient.
+	// That's necessary but not sufficient, since the other
+	// value has non-type info.
 
 	if values, ok := anyof.PossibleValues(v); ok {
 		// This will cover any-of and single values.

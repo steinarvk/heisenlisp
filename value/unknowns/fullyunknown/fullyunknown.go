@@ -13,6 +13,8 @@ func (f fullyUnknown) Eval(_ types.Env) (types.Value, error) { return f, nil }
 func (_ fullyUnknown) Falsey() bool                          { return false }
 func (_ fullyUnknown) TypeName() string                      { return TypeName }
 
+func (_ fullyUnknown) HasNontypeInfo() bool { return false }
+
 func (_ fullyUnknown) ActualTypeName() ([]string, bool) {
 	return nil, false
 }

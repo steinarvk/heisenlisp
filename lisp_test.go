@@ -321,6 +321,7 @@ var values = []string{
 	"(any-of 1.5 2)",
 	"(list 1.5 2)",
 	"(unknown-of-type 'integer)",
+	"(number-in-range 'from 1 'to 42)",
 }
 
 func TestUnaryInvariants(t *testing.T) {
