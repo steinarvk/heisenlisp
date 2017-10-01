@@ -3,7 +3,6 @@ package numerics
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numrange"
@@ -305,7 +304,6 @@ var numericGeq = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (inte
 	return boolean.FromBool(numrange.NewAbove(b, true).Contains(a)), nil
 }, func(a, b *numrange.Range) (interface{}, error) {
 	result := numrange.Compare(a, b)
-	log.Printf("compared %v >= %v = %v", a, b, result)
 	switch {
 	case result.MustBeLeftLarger || result.MustBeEqual:
 		return boolean.True, nil
@@ -329,9 +327,6 @@ var numericGreater = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (
 	return boolean.FromBool(numrange.NewAbove(b, false).Contains(a)), nil
 }, func(a, b *numrange.Range) (interface{}, error) {
 	result := numrange.Compare(a, b)
-	log.Printf("compared %v > %v = %v", a, b, result)
-	log.Printf("%v must be larger: %v", a, result.MustBeLeftLarger)
-	log.Printf("%v may be larger: %v", a, result.MustBeLeftLarger)
 	switch {
 	case result.MustBeLeftLarger:
 		return boolean.True, nil

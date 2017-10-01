@@ -1,8 +1,6 @@
 package numrange
 
 import (
-	"log"
-
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -33,15 +31,12 @@ func (r *Range) otherRangeMayBeGreater(other *Range) bool {
 	switch whatIsMyLowerBound {
 	case numcmp.Less:
 		// my lower bound is less than their upper bound, so they may be greater.
-		log.Printf("for %v.otherRangeMayBeGreater(%v): %v is less than %v, so %v may be greater", r, other, r.LowerBound(), other.UpperBound(), other)
 		return true
 	case numcmp.Greater:
 		// my lower bound is greater than their upper bound, so they may not be greater.
-		log.Printf("for %v.otherRangeMayBeGreater(%v): %v is greater than %v, so %v CANNOT be greater", r, other, r.LowerBound(), other.UpperBound(), other)
 		return false
 	case numcmp.Equal:
 		// the bounds are equal. they may not be greater.
-		log.Printf("for %v.otherRangeMayBeGreater(%v): %v is equal to %v, so %v CANNOT be greater", r, other, r.LowerBound(), other.UpperBound(), other)
 		return false
 	default:
 		panic("impossible")
@@ -212,11 +207,8 @@ func (r *Range) IsSingleton() bool {
 // Intersection computes the intersection of two ranges.
 // Note that this can be nil!
 func (r *Range) Intersection(o *Range) *Range {
-	log.Printf("intersecting %v and %v", r, o)
 	low, lowIncl := r.strictestLowerBound(o)
 	high, highIncl := r.strictestUpperBound(o)
-	log.Printf("strictest lower bound: %v %v", low, lowIncl)
-	log.Printf("strictest upper bound: %v %v", high, highIncl)
 
 	switch numcmp.CompareOrPanic(low, high) {
 	case numcmp.Equal:
@@ -261,14 +253,12 @@ func Compare(left, right *Range) *ComparisonResult {
 
 	// check for disjointness. two ways: left smaller, or left larger.
 	if left.otherRangeIsDisjointOnLowerSide(right) {
-		log.Printf("%v is disjointed from and always lesser than %v", right, left)
 		return &ComparisonResult{
 			MayBeLeftLarger:  true,
 			MustBeLeftLarger: true,
 		}
 	}
 	if left.otherRangeIsDisjointOnUpperSide(right) {
-		log.Printf("%v is disjointed from and always greater than %v", right, left)
 		return &ComparisonResult{
 			MayBeRightLarger:  true,
 			MustBeRightLarger: true,
@@ -283,16 +273,9 @@ func Compare(left, right *Range) *ComparisonResult {
 	mayBeRightGreater := left.otherRangeMayBeGreater(right)
 	mayBeLeftGreater := right.otherRangeMayBeGreater(left)
 
-	log.Printf("attempting comparison of left=%v right=%v", left, right)
-	log.Printf("possible that %v = %v ? %v", left, right, mayBeEqual)
-	log.Printf("possible that %v < %v ? %v", left, right, mayBeRightGreater)
-	log.Printf("possible that %v > %v ? %v", left, right, mayBeLeftGreater)
-
-	rv := &ComparisonResult{
+	return &ComparisonResult{
 		MayBeLeftLarger:  mayBeLeftGreater,
 		MayBeRightLarger: mayBeRightGreater,
 		MayBeEqual:       mayBeEqual,
 	}
-	log.Printf("Compare(%v, %v) = %v", left, right, rv)
-	return rv
 }
