@@ -3,6 +3,7 @@ package numerics
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numrange"
@@ -253,9 +254,20 @@ func Mod(a, b types.Value) (types.Value, error) {
 	}))
 }
 
-var numericLeq = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+var numericLeq = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (interface{}, error) {
+	// <=
 	return boolean.FromBool(numrange.NewBelow(b, true).Contains(a)), nil
-})
+}, func(a, b *numrange.Range) (interface{}, error) {
+	result := numrange.Compare(a, b)
+	switch {
+	case result.MustBeRightLarger || result.MustBeEqual:
+		return boolean.True, nil
+	case result.MayBeRightLarger || result.MayBeEqual:
+		return anyof.MaybeValue, nil
+	default:
+		return boolean.False, nil
+	}
+}))
 
 func BinaryLeq(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
@@ -265,9 +277,20 @@ func BinaryLeq(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, numericLeq)
 }
 
-var numericLess = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+var numericLess = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (interface{}, error) {
+	// <
 	return boolean.FromBool(numrange.NewBelow(b, false).Contains(a)), nil
-})
+}, func(a, b *numrange.Range) (interface{}, error) {
+	result := numrange.Compare(a, b)
+	switch {
+	case result.MustBeRightLarger:
+		return boolean.True, nil
+	case result.MayBeRightLarger:
+		return anyof.MaybeValue, nil
+	default:
+		return boolean.False, nil
+	}
+}))
 
 func BinaryLess(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
@@ -277,9 +300,21 @@ func BinaryLess(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, numericLess)
 }
 
-var numericGeq = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+var numericGeq = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (interface{}, error) {
+	// >=
 	return boolean.FromBool(numrange.NewAbove(b, true).Contains(a)), nil
-})
+}, func(a, b *numrange.Range) (interface{}, error) {
+	result := numrange.Compare(a, b)
+	log.Printf("compared %v >= %v = %v", a, b, result)
+	switch {
+	case result.MustBeLeftLarger || result.MustBeEqual:
+		return boolean.True, nil
+	case result.MayBeLeftLarger || result.MayBeEqual:
+		return anyof.MaybeValue, nil
+	default:
+		return boolean.False, nil
+	}
+}))
 
 func BinaryGeq(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
@@ -289,9 +324,23 @@ func BinaryGeq(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, numericGeq)
 }
 
-var numericGreater = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+var numericGreater = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (interface{}, error) {
+	// >
 	return boolean.FromBool(numrange.NewAbove(b, false).Contains(a)), nil
-})
+}, func(a, b *numrange.Range) (interface{}, error) {
+	result := numrange.Compare(a, b)
+	log.Printf("compared %v > %v = %v", a, b, result)
+	log.Printf("%v must be larger: %v", a, result.MustBeLeftLarger)
+	log.Printf("%v may be larger: %v", a, result.MustBeLeftLarger)
+	switch {
+	case result.MustBeLeftLarger:
+		return boolean.True, nil
+	case result.MayBeLeftLarger:
+		return anyof.MaybeValue, nil
+	default:
+		return boolean.False, nil
+	}
+}))
 
 func BinaryGreater(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {
@@ -301,10 +350,21 @@ func BinaryGreater(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, numericGreater)
 }
 
-var numericEq = toBinaryNumeric(func(a, b types.Numeric) (types.Value, error) {
+var numericEq = castingToValue(wrappedWithRanges(func(a, b types.Numeric) (interface{}, error) {
+	// =
 	eq := numcmp.CompareOrPanic(a, b) == numcmp.Equal
 	return boolean.FromBool(eq), nil
-})
+}, func(a, b *numrange.Range) (interface{}, error) {
+	result := numrange.Compare(a, b)
+	switch {
+	case result.MustBeEqual:
+		return boolean.True, nil
+	case result.MayBeEqual:
+		return anyof.MaybeValue, nil
+	default:
+		return boolean.False, nil
+	}
+}))
 
 func BinaryEq(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {

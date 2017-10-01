@@ -265,6 +265,22 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= "((((nil 1) 2) 3) 4)" (_to-string (fold-left list '() '(1 2 3 4))))`,
 		`(= "(((1 2) 3) 4)" (_to-string (reduce-left list '() '(1 2 3 4))))`,
 		`(= (length (list 1 2 3 4 5)) 5)`,
+		`(> (number-in-range 'from 10 'to 20) 0)`,
+		`(_maybe? (> (number-in-range 'from 11 'to 21) 16))`,
+		`(not (> (number-in-range 'from 10 'to 20) 25))`,
+		`(< 0 (number-in-range 'from 10 'to 20))`,
+		`(_maybe? (< 15 (number-in-range 'from 10 'to 20)))`,
+		`(not (< 25 (number-in-range 'from 10 'to 20)))`,
+		`(_maybe? (<= (number-in-range 'from 10 'to 20) 10))`,
+		`(not (<= (number-in-range 'above 10 'to 20) 10))`,
+		`(_maybe? (>= (number-in-range 'from 12 'to 22) 22))`,
+		`(not (>= (number-in-range 'from 10 'below 20) 20))`,
+		`(_maybe? (= (number-in-range 'from 10 'to 20) 20))`,
+		`(not (= (number-in-range 'from 10 'below 20) 20))`,
+		`(_maybe? (= (number-in-range 'above 0) 5))`,
+		`(not (= (number-in-range 'above 0) 0))`,
+		`(_maybe? (= (number-in-range 'below 0) -5))`,
+		`(not (= (number-in-range 'below 0) 5))`,
 	}
 
 	for i, s := range exprs {

@@ -755,29 +755,42 @@ func BindDefaults(e types.Env) {
 		var lowVal, highVal types.Value
 		var lowIncl, highIncl bool
 
-		if val, ok := args["from"]; ok {
+		val, hasFrom := args["from"]
+		if hasFrom {
 			lowVal = val
 			lowIncl = true
-		} else if val, ok := args["above"]; ok {
+		}
+		val, hasAbove := args["above"]
+		if hasAbove {
 			lowVal = val
 			lowIncl = false
 		}
 
-		if val, ok := args["to"]; ok {
+		val, hasTo := args["to"]
+		if hasTo {
 			highVal = val
 			highIncl = true
-		} else if val, ok := args["below"]; ok {
+		}
+		val, hasBelow := args["below"]
+		if hasBelow {
 			highVal = val
 			highIncl = false
 		}
 
+		if hasFrom && hasAbove {
+			return nil, errors.New("two lower bounds specified (from and above)")
+		}
+		if hasTo && hasBelow {
+			return nil, errors.New("two upper bounds specified (to and below)")
+		}
+
 		low, ok := lowVal.(types.Numeric)
-		if !ok {
+		if !ok && lowVal != nil {
 			return nil, fmt.Errorf("invalid numeric bound: %v", lowVal)
 		}
 
 		high, ok := highVal.(types.Numeric)
-		if !ok {
+		if !ok && highVal != nil {
 			return nil, fmt.Errorf("invalid numeric bound: %v", highVal)
 		}
 

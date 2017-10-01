@@ -1,6 +1,8 @@
 package numrange
 
 import (
+	"log"
+
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -24,6 +26,61 @@ func NewSingleton(x types.Numeric) *Range {
 		upperBoundInclusive: true,
 		lowerBoundInclusive: true,
 	}
+}
+
+func (r *Range) otherRangeMayBeGreater(other *Range) bool {
+	whatIsMyLowerBound := numcmp.CompareOrPanic(r.LowerBound(), other.UpperBound())
+	switch whatIsMyLowerBound {
+	case numcmp.Less:
+		// my lower bound is less than their upper bound, so they may be greater.
+		log.Printf("for %v.otherRangeMayBeGreater(%v): %v is less than %v, so %v may be greater", r, other, r.LowerBound(), other.UpperBound(), other)
+		return true
+	case numcmp.Greater:
+		// my lower bound is greater than their upper bound, so they may not be greater.
+		log.Printf("for %v.otherRangeMayBeGreater(%v): %v is greater than %v, so %v CANNOT be greater", r, other, r.LowerBound(), other.UpperBound(), other)
+		return false
+	case numcmp.Equal:
+		// the bounds are equal. they may not be greater.
+		log.Printf("for %v.otherRangeMayBeGreater(%v): %v is equal to %v, so %v CANNOT be greater", r, other, r.LowerBound(), other.UpperBound(), other)
+		return false
+	default:
+		panic("impossible")
+	}
+}
+
+func (r *Range) otherRangeIsDisjointOnLowerSide(other *Range) bool {
+	n := other.UpperBound()
+	inclusive := r.lowerBoundInclusive && other.upperBoundInclusive
+
+	if r.lowerBound == nil || n == nil {
+		return false
+	}
+	result := numcmp.CompareOrPanic(n, r.lowerBound)
+	if result == numcmp.Less {
+		return true
+	}
+	if result == numcmp.Equal && !inclusive {
+		return true
+	}
+	return false
+}
+
+func (r *Range) otherRangeIsDisjointOnUpperSide(other *Range) bool {
+	n := other.LowerBound()
+	inclusive := r.upperBoundInclusive && other.lowerBoundInclusive
+
+	if r.upperBound == nil || n == nil {
+		return false
+	}
+	result := numcmp.CompareOrPanic(n, r.upperBound)
+	if result == numcmp.Greater {
+		return true
+	}
+	if result == numcmp.Equal && !inclusive {
+		return true
+	}
+
+	return false
 }
 
 func NewBelow(x types.Numeric, inclusive bool) *Range {
@@ -125,7 +182,7 @@ func (r *Range) strictestLowerBound(o *Range) (types.Numeric, bool) {
 	}
 }
 
-// strictestUpperBound returns the strictest lower bound; which is
+// strictestUpperBound returns the strictest upper bound; which is
 // a combination of a Numeric (nil means -inf) and a boolean
 // meaning inclusive/exclusive.
 func (r *Range) strictestUpperBound(o *Range) (types.Numeric, bool) {
@@ -141,15 +198,25 @@ func (r *Range) strictestUpperBound(o *Range) (types.Numeric, bool) {
 	case numcmp.Less:
 		return r.upperBound, r.upperBoundInclusive
 	default:
-		return r.lowerBound, r.lowerBoundInclusive && o.lowerBoundInclusive
+		return r.upperBound, r.upperBoundInclusive && o.upperBoundInclusive
 	}
+}
+
+func (r *Range) IsSingleton() bool {
+	if r.lowerBound == nil || r.upperBound == nil {
+		return false
+	}
+	return numcmp.CompareOrPanic(r.lowerBound, r.upperBound) == numcmp.Equal
 }
 
 // Intersection computes the intersection of two ranges.
 // Note that this can be nil!
 func (r *Range) Intersection(o *Range) *Range {
+	log.Printf("intersecting %v and %v", r, o)
 	low, lowIncl := r.strictestLowerBound(o)
 	high, highIncl := r.strictestUpperBound(o)
+	log.Printf("strictest lower bound: %v %v", low, lowIncl)
+	log.Printf("strictest upper bound: %v %v", high, highIncl)
 
 	switch numcmp.CompareOrPanic(low, high) {
 	case numcmp.Equal:
@@ -168,4 +235,64 @@ func (r *Range) Intersection(o *Range) *Range {
 		return nil
 	}
 	panic("impossible")
+}
+
+type ComparisonResult struct {
+	MayBeLeftLarger  bool
+	MustBeLeftLarger bool
+
+	MayBeEqual  bool
+	MustBeEqual bool
+
+	MayBeRightLarger  bool
+	MustBeRightLarger bool
+}
+
+func Compare(left, right *Range) *ComparisonResult {
+	if left.IsSingleton() && right.IsSingleton() {
+		if numcmp.CompareOrPanic(left.lowerBound, right.lowerBound) == numcmp.Equal {
+			// two singleton sets is the only way anything can be _must_ equal.
+			return &ComparisonResult{
+				MayBeEqual:  true,
+				MustBeEqual: true,
+			}
+		}
+	}
+
+	// check for disjointness. two ways: left smaller, or left larger.
+	if left.otherRangeIsDisjointOnLowerSide(right) {
+		log.Printf("%v is disjointed from and always lesser than %v", right, left)
+		return &ComparisonResult{
+			MayBeLeftLarger:  true,
+			MustBeLeftLarger: true,
+		}
+	}
+	if left.otherRangeIsDisjointOnUpperSide(right) {
+		log.Printf("%v is disjointed from and always greater than %v", right, left)
+		return &ComparisonResult{
+			MayBeRightLarger:  true,
+			MustBeRightLarger: true,
+		}
+	}
+
+	// result will be uncertain.
+	// we can exclude all the "must" options.
+	// need to calculate what "may" options apply.
+
+	mayBeEqual := left.Intersection(right) != nil
+	mayBeRightGreater := left.otherRangeMayBeGreater(right)
+	mayBeLeftGreater := right.otherRangeMayBeGreater(left)
+
+	log.Printf("attempting comparison of left=%v right=%v", left, right)
+	log.Printf("possible that %v = %v ? %v", left, right, mayBeEqual)
+	log.Printf("possible that %v < %v ? %v", left, right, mayBeRightGreater)
+	log.Printf("possible that %v > %v ? %v", left, right, mayBeLeftGreater)
+
+	rv := &ComparisonResult{
+		MayBeLeftLarger:  mayBeLeftGreater,
+		MayBeRightLarger: mayBeRightGreater,
+		MayBeEqual:       mayBeEqual,
+	}
+	log.Printf("Compare(%v, %v) = %v", left, right, rv)
+	return rv
 }

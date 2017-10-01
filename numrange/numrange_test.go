@@ -123,3 +123,23 @@ func TestRangeIntersection(t *testing.T) {
 		}
 	}
 }
+
+func TestRangeRegressionSimple1(t *testing.T) {
+	e := builtin.NewRootEnv()
+	left := parseSpec(e, "[10,20]")
+	right := parseSpec(e, "[0,0]")
+
+	var got, want bool
+
+	want = true
+	got = left.otherRangeIsDisjointOnLowerSide(right)
+	if got != want {
+		t.Errorf("%v.otherRangeIsDisjointOnLowerSide(%v) = %v want %v", left, right, got, want)
+	}
+
+	want = false
+	got = left.otherRangeIsDisjointOnUpperSide(right)
+	if got != want {
+		t.Errorf("%v.otherRangeIsDisjointOnLowerSide(%v) = %v want %v", left, right, got, want)
+	}
+}
