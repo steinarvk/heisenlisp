@@ -8,7 +8,6 @@ import (
 	"github.com/steinarvk/heisenlisp/typeset"
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/real"
-	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 )
 
 const TypeName = "number-in-range"
@@ -54,42 +53,6 @@ func (_ *numinrangeValue) HasNontypeInfo() bool { return true }
 
 func (n *numinrangeValue) ActualTypeName() ([]string, bool) {
 	return n.ts.Slice(), true
-}
-
-func (n *numinrangeValue) Intersects(v types.Value) (bool, error) {
-	if !n.ts.IntersectsWith(v) {
-		return false, nil
-	}
-
-	if unk, ok := v.(types.Unknown); ok && !unk.HasNontypeInfo() {
-		return true, nil
-	}
-
-	// We know there are intersections on a type level.
-	// That's necessary but not sufficient, since the other
-	// value has non-type info.
-
-	if values, ok := anyof.PossibleValues(v); ok {
-		// This will cover any-of and single values.
-		for _, val := range values {
-			if !n.ts.IntersectsWith(val) {
-				continue
-			}
-			// We assume that our own typeset will only contain numeric types.
-			numericVal := val.(types.Numeric)
-			if n.r.Contains(numericVal) {
-				return true, nil
-			}
-		}
-
-		return false, nil
-	}
-
-	if other, ok := v.(*numinrangeValue); ok {
-		return n.r.Intersection(other.r) != nil, nil
-	}
-
-	panic(fmt.Sprintf("cannot check intersection between %v and %v", n, v))
 }
 
 func ToRange(v types.Value) (*numrange.Range, bool) {

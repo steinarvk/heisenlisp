@@ -6,6 +6,8 @@ const TypeName = "unknown"
 
 type fullyUnknown struct{}
 
+var _ types.Unknown = Value
+
 var Value fullyUnknown = fullyUnknown{}
 
 func (_ fullyUnknown) String() string                        { return "#unknown" }
@@ -17,11 +19,6 @@ func (_ fullyUnknown) HasNontypeInfo() bool { return false }
 
 func (_ fullyUnknown) ActualTypeName() ([]string, bool) {
 	return nil, false
-}
-
-func (_ fullyUnknown) Intersects(v types.Value) (bool, error) {
-	// result is: v
-	return true, nil
 }
 
 func Is(v types.Value) bool {

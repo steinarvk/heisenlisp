@@ -11,6 +11,8 @@ import (
 
 const TypeName = "unknown-of-type"
 
+var _ types.Unknown = typedUnknown{}
+
 type typedUnknown struct {
 	ts *typeset.TypeSet
 }
@@ -35,10 +37,6 @@ func (t typedUnknown) ActualTypeName() ([]string, bool) {
 
 func (t typedUnknown) mayHaveType(name string) bool {
 	return t.ts.Has(name)
-}
-
-func (t typedUnknown) Intersects(v types.Value) (bool, error) {
-	return t.ts.IntersectsWith(v), nil
 }
 
 func Is(v types.Value) bool {

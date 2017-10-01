@@ -4,6 +4,7 @@ import (
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/types"
+	"github.com/steinarvk/heisenlisp/unknown/intersection"
 	"github.com/steinarvk/heisenlisp/value/cons"
 )
 
@@ -57,29 +58,21 @@ func Equals(a, b types.Value) (types.TernaryTruthValue, error) {
 		return ternaryAnd(tv1, tv2), nil
 	}
 
-	unkA, okA := a.(types.Unknown)
-	if okA {
-		ok, err := unkA.Intersects(b)
+	_, aIsUnk := a.(types.Unknown)
+	_, bIsUnk := b.(types.Unknown)
+	if aIsUnk || bIsUnk {
+		result, err := intersection.Intersects(a, b)
 		if err != nil {
 			return types.InvalidTernary, err
 		}
-		if ok {
+		if result {
 			return types.Maybe, nil
 		}
 		return types.False, nil
 	}
 
-	unkB, okB := b.(types.Unknown)
-	if okB {
-		ok, err := unkB.Intersects(a)
-		if err != nil {
-			return types.InvalidTernary, err
-		}
-		if ok {
-			return types.Maybe, nil
-		}
-		return types.False, nil
-	}
-
+	// Not unknown, not atomically equal, no recursive equality (which should've
+	// been defined earlier in this function).
+	// So not equal.
 	return types.False, nil
 }

@@ -10,10 +10,11 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
-	"github.com/steinarvk/heisenlisp/value/unknowns/typed"
 )
 
 const TypeName = "any-of"
+
+var _ types.Unknown = anyOf{}
 
 const (
 	maxAnyOfElements = 100
@@ -71,41 +72,6 @@ func (a anyOf) ActualTypeName() ([]string, bool) {
 
 func (a anyOf) possibleValues() []types.Value {
 	return a.vals
-}
-
-func (a anyOf) Intersects(v types.Value) (bool, error) {
-	if fullyunknown.Is(v) {
-		return true, nil
-	}
-
-	if typed.Is(v) {
-		return v.(types.Unknown).Intersects(a)
-	}
-
-	xs, ok1 := PossibleValues(a)
-	ys, ok2 := PossibleValues(v)
-	if !ok1 || !ok2 {
-		return false, fmt.Errorf("unable to calculate intersection of: %v and %v", a, v)
-	}
-
-	for _, x := range xs {
-		for _, y := range ys {
-			ternaryBool, err := cyclebreaker.Equals(x, y)
-			if err != nil {
-				return false, err
-			}
-			switch ternaryBool {
-			case types.False:
-				break
-			case types.Maybe:
-				return true, nil
-			case types.True:
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil
 }
 
 func newRaw(xs []types.Value) types.Value {
@@ -201,6 +167,11 @@ func PossibleValues(v types.Value) ([]types.Value, bool) {
 	}
 
 	return a.possibleValues(), true
+}
+
+func Is(v types.Value) bool {
+	_, ok := v.(anyOf)
+	return ok
 }
 
 func IsMaybe(v types.Value) bool {

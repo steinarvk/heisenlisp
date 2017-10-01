@@ -17,9 +17,9 @@ type Value interface {
 }
 
 type Unknown interface {
+	Value
 	ActualTypeName() ([]string, bool)
 	HasNontypeInfo() bool
-	Intersects(Value) (bool, error)
 }
 
 type Atom interface {
