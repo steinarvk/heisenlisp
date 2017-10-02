@@ -284,6 +284,7 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_maybe? (= (any-of 0 1) 0))`,
 		`(_maybe? (= (dec (any-of 0 1)) 0))`,
 		`(not (= (dec (dec (any-of 0 1))) 0))`,
+		`(not (= NaN NaN))`,
 	}
 
 	for i, s := range exprs {
@@ -341,12 +342,13 @@ var values = []string{
 	"(list 1.5 2)",
 	"(unknown-of-type 'integer)",
 	"(number-in-range 'from 1 'to 42)",
+	"NaN",
 }
 
 func TestUnaryInvariants(t *testing.T) {
 	templates := []string{
-		"(may? (equals? EXPR EXPR))",
-		"(or (uncertain? EXPR) (equals? EXPR EXPR))",
+		"(or (must? (nan? EXPR)) (may? (equals? EXPR EXPR)))",
+		"(or (uncertain? EXPR) (must? (nan? EXPR)) (equals? EXPR EXPR))",
 	}
 
 	env := builtin.NewRootEnv()

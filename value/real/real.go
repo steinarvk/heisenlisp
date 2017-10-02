@@ -2,6 +2,7 @@ package real
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -35,4 +36,12 @@ func (v realValue) AsDouble() (float64, bool) {
 
 func FromFloat64(x float64) types.Value {
 	return realValue(x)
+}
+
+func IsNaN(v types.Value) bool {
+	uv, ok := v.(realValue)
+	if !ok {
+		return false
+	}
+	return math.IsNaN(float64(uv))
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,6 +29,7 @@ import (
 	"github.com/steinarvk/heisenlisp/value/integer"
 	"github.com/steinarvk/heisenlisp/value/macro"
 	"github.com/steinarvk/heisenlisp/value/null"
+	"github.com/steinarvk/heisenlisp/value/real"
 	"github.com/steinarvk/heisenlisp/value/str"
 	"github.com/steinarvk/heisenlisp/value/symbol"
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
@@ -407,6 +409,12 @@ func BindDefaults(e types.Env) {
 	e.Bind("false", boolean.False)
 	e.Bind("maybe", unknown.MaybeValue)
 	e.Bind("unknown", fullyunknown.Value)
+
+	e.Bind("nan", real.FromFloat64(math.NaN()))
+
+	Unary(e, "_nan?", func(a types.Value) (types.Value, error) {
+		return boolean.FromBool(real.IsNaN(a)), nil
+	})
 
 	Unary(e, "_atom?", func(a types.Value) (types.Value, error) {
 		_, ok := a.(types.Atom)

@@ -6,6 +6,7 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown/intersection"
 	"github.com/steinarvk/heisenlisp/value/cons"
+	"github.com/steinarvk/heisenlisp/value/real"
 )
 
 func AtomEquals(a, b types.Value) bool {
@@ -26,6 +27,10 @@ func ternaryAnd(a, b types.TernaryTruthValue) types.TernaryTruthValue {
 }
 
 func Equals(a, b types.Value) (types.TernaryTruthValue, error) {
+	if real.IsNaN(a) || real.IsNaN(b) {
+		return types.False, nil
+	}
+
 	if numerics.IsNumeric(a) && numerics.IsNumeric(b) {
 		if numcmp.CompareOrPanic(a.(types.Numeric), b.(types.Numeric)) == numcmp.Equal {
 			return types.True, nil

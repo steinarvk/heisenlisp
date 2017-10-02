@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numrange"
 	"github.com/steinarvk/heisenlisp/numtower"
@@ -224,10 +225,16 @@ func BinaryMultiply(a, b types.Value) (types.Value, error) {
 
 var binaryDivision = toBinaryNumericValues(numtower.BinaryTowerFunc{
 	OnInt64s: func(a, b int64) (interface{}, error) {
+		if b == 0 {
+			return nil, lisperr.DivisionByZero
+		}
 		x := float64(a) / float64(b)
 		return real.FromFloat64(x), nil
 	},
 	OnFloat64s: func(a, b float64) (interface{}, error) {
+		if b == 0 {
+			return nil, lisperr.DivisionByZero
+		}
 		return real.FromFloat64(a / b), nil
 	},
 }.Call)
