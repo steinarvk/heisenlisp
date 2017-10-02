@@ -27,7 +27,23 @@ func FoldLeft(f func(a, b types.Value) (types.Value, error), initial types.Value
 	return FoldLeftShortcircuit(g, initial, consish)
 }
 
+func FoldLeftWithOddTail(f func(a, b types.Value) (types.Value, error), handleOddTail func(a, b types.Value) (types.Value, error), initial types.Value, consish types.Value) (types.Value, error) {
+	g := func(a, b types.Value) (types.Value, bool, error) {
+		rv, err := f(a, b)
+		return rv, false, err
+	}
+	return FoldLeftShortcircuitWithOddTail(g, handleOddTail, initial, consish)
+}
+
+func failOnOddTail(_, consish types.Value) (types.Value, error) {
+	return nil, lisperr.UnexpectedValue{"cons or enumerable", consish}
+}
+
 func FoldLeftShortcircuit(f func(a, b types.Value) (types.Value, bool, error), initial types.Value, consish types.Value) (types.Value, error) {
+	return FoldLeftShortcircuitWithOddTail(f, failOnOddTail, initial, consish)
+}
+
+func FoldLeftShortcircuitWithOddTail(f func(a, b types.Value) (types.Value, bool, error), handleOddTail func(a, b types.Value) (types.Value, error), initial types.Value, consish types.Value) (types.Value, error) {
 	if null.IsNil(consish) {
 		return initial, nil
 	}
@@ -41,19 +57,20 @@ func FoldLeftShortcircuit(f func(a, b types.Value) (types.Value, bool, error), i
 		if shortcircuit {
 			return val, nil
 		}
-		return FoldLeftShortcircuit(f, val, cdr)
+		return FoldLeftShortcircuitWithOddTail(f, handleOddTail, val, cdr)
 	}
 
-	conses, ok := anyof.PossibleValues(consish)
-	if !ok {
-		return nil, lisperr.UnexpectedValue{"cons or enumerable", consish}
+	if !anyof.Is(consish) && !optcons.Is(consish) {
+		return handleOddTail(initial, consish)
 	}
+
+	conses, _ := anyof.PossibleValues(consish)
 
 	var rv []types.Value
 
 	for _, subconsish := range conses {
 		// exploding! TODO
-		val, err := FoldLeftShortcircuit(f, initial, subconsish)
+		val, err := FoldLeftShortcircuitWithOddTail(f, handleOddTail, initial, subconsish)
 		if err != nil {
 			return nil, err
 		}

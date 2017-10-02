@@ -448,9 +448,7 @@ func listLispFilesInOrder(dirname string) ([]string, error) {
 func TestExamples(t *testing.T) {
 	dirname := "./examples/"
 
-	worksInProgress := []string{
-		"lists-of-unknown-length-unclear.hlisp",
-	}
+	worksInProgress := []string{}
 
 	filenames, err := listLispFilesInOrder(dirname)
 	if err != nil {

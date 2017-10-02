@@ -536,6 +536,24 @@ func BindDefaults(e types.Env) {
 		}
 	})
 
+	Unary(e, "length", func(consish types.Value) (types.Value, error) {
+		zero := integer.FromInt64(0)
+		one := integer.FromInt64(1)
+		f := func(lastCount, _ types.Value) (types.Value, error) {
+			rv, err := numerics.BinaryPlus(lastCount, one)
+			return rv, err
+		}
+		g := func(lastCount, tail types.Value) (types.Value, error) {
+			_, ok := tail.(types.Unknown)
+			if !ok {
+				return nil, lisperr.UnexpectedValue{"valid list-tail", consish}
+			}
+			// TODO: do any sort of filtering of unknowns.
+			return numinrange.New(lastCount.(types.Numeric), nil, true, false, []string{integer.TypeName})
+		}
+		return reductions.FoldLeftWithOddTail(f, g, zero, consish)
+	})
+
 	Binary(e, "apply", func(f, args types.Value) (types.Value, error) {
 		callable, ok := f.(types.Callable)
 		if !ok {

@@ -11,10 +11,6 @@
 (defun! inc (n) (+ n 1))
 (defun! dec (n) (- n 1))
 
-(let ((f (lambda (n _) (inc n))))
-  (defun! length (xs)
-    (fold-left f 0 xs)))
-
 (defmacro! progn (&rest body) `(let () ,@body))
 
 (defun! negate (x) (* -1 x))

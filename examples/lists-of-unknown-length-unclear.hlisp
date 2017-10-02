@@ -10,4 +10,7 @@
 (_assert! "maybe" (any? (is-equal-to 2) list-with-unknown))
 
 ;; This should be a typed unknown at least.
-(_assert! "unknown" (length cons-structure-with-unknown-tail))
+(_assert! "true" (integer? (length cons-structure-with-unknown-tail)))
+(_assert! "false" (= 2 (length cons-structure-with-unknown-tail)))
+(_assert! "maybe" (= 3 (length cons-structure-with-unknown-tail)))
+(_assert! "maybe" (= 43829 (length cons-structure-with-unknown-tail)))
