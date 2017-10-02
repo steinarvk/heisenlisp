@@ -16,10 +16,10 @@ import (
 	"github.com/steinarvk/heisenlisp/equality"
 	"github.com/steinarvk/heisenlisp/expr"
 	"github.com/steinarvk/heisenlisp/lisperr"
+	"github.com/steinarvk/heisenlisp/listops"
 	"github.com/steinarvk/heisenlisp/logic"
 	"github.com/steinarvk/heisenlisp/numerics"
 	"github.com/steinarvk/heisenlisp/purity"
-	"github.com/steinarvk/heisenlisp/reductions"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/unknown"
 	"github.com/steinarvk/heisenlisp/value/boolean"
@@ -551,7 +551,7 @@ func BindDefaults(e types.Env) {
 			// TODO: do any sort of filtering of unknowns.
 			return numinrange.New(lastCount.(types.Numeric), nil, true, false, []string{integer.TypeName})
 		}
-		return reductions.FoldLeftWithOddTail(f, g, zero, consish)
+		return listops.FoldLeftWithOddTail(f, g, zero, consish)
 	})
 
 	Binary(e, "apply", func(f, args types.Value) (types.Value, error) {
@@ -569,7 +569,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "reversed", func(l types.Value) (types.Value, error) {
-		return reductions.Reversed(l)
+		return listops.Reversed(l)
 	})
 
 	Binary(e, "map", func(f, l types.Value) (types.Value, error) {
@@ -582,7 +582,7 @@ func BindDefaults(e types.Env) {
 			return callable.Call([]types.Value{a})
 		}
 
-		return reductions.Map(cb, l)
+		return listops.Map(cb, l)
 	})
 
 	Binary(e, "any?", func(f, l types.Value) (types.Value, error) {
@@ -611,7 +611,7 @@ func BindDefaults(e types.Env) {
 			panic("impossible")
 		}
 
-		return reductions.FoldLeftShortcircuit(cb, boolean.False, l)
+		return listops.FoldLeftShortcircuit(cb, boolean.False, l)
 	})
 
 	Binary(e, "all?", func(f, l types.Value) (types.Value, error) {
@@ -640,7 +640,7 @@ func BindDefaults(e types.Env) {
 			panic("impossible")
 		}
 
-		return reductions.FoldLeftShortcircuit(cb, boolean.True, l)
+		return listops.FoldLeftShortcircuit(cb, boolean.True, l)
 	})
 
 	Ternary(e, "reduce-left", func(f, initial, l types.Value) (types.Value, error) {
@@ -679,7 +679,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "list?", func(l types.Value) (types.Value, error) {
-		return reductions.Foldable(l), nil
+		return listops.Foldable(l), nil
 	})
 
 	Binary(e, "filter", func(f, l types.Value) (types.Value, error) {
@@ -692,7 +692,7 @@ func BindDefaults(e types.Env) {
 			return callable.Call([]types.Value{a})
 		}
 
-		return reductions.Filter(cb, l)
+		return listops.Filter(cb, l)
 	})
 
 	Binary(e, "filter-reversed", func(f, l types.Value) (types.Value, error) {
@@ -705,7 +705,7 @@ func BindDefaults(e types.Env) {
 			return callable.Call([]types.Value{a})
 		}
 
-		return reductions.FilterReversed(cb, l)
+		return listops.FilterReversed(cb, l)
 	})
 
 	Ternary(e, "fold-left", func(f, initial, l types.Value) (types.Value, error) {
@@ -720,7 +720,7 @@ func BindDefaults(e types.Env) {
 			return callable.Call([]types.Value{a, b})
 		}
 
-		return reductions.FoldLeft(cb, initial, l)
+		return listops.FoldLeft(cb, initial, l)
 	})
 
 	Values(e, "trace", func(xs []types.Value) (types.Value, error) {

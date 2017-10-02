@@ -1,7 +1,4 @@
-package reductions
-
-// Note: these aren't all reductions anymore, there's
-// other things like map and filter.
+package listops
 
 import (
 	"github.com/steinarvk/heisenlisp/lisperr"
