@@ -12,6 +12,8 @@ import (
 
 const TypeName = "integer"
 
+var _ types.Numeric = integer(0)
+
 type integer int64
 
 func (i integer) AtomEquals(other types.Atom) bool {
@@ -32,9 +34,9 @@ func (_ integer) TypeName() string { return TypeName }
 func (i integer) AsInt64() (int64, bool)    { return int64(i), true }
 func (i integer) AsDouble() (float64, bool) { return float64(i), true }
 
-func FromInt(v int) types.Value { return FromInt64(int64(v)) }
+func FromInt(v int) types.Numeric { return FromInt64(int64(v)) }
 
-func FromInt64(v int64) types.Value {
+func FromInt64(v int64) types.Numeric {
 	return integer(v)
 }
 
@@ -46,7 +48,7 @@ func ToInt64(v types.Value) (int64, error) {
 	return int64(rv), nil
 }
 
-func Parse(s string) (types.Value, error) {
+func Parse(s string) (types.Numeric, error) {
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		return nil, err

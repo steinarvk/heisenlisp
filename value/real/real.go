@@ -34,7 +34,7 @@ func (v realValue) AsDouble() (float64, bool) {
 	return float64(v), true
 }
 
-func FromFloat64(x float64) types.Value {
+func FromFloat64(x float64) types.Numeric {
 	return realValue(x)
 }
 
