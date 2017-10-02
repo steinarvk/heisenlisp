@@ -223,21 +223,27 @@ func BinaryMultiply(a, b types.Value) (types.Value, error) {
 	return wrapBinary(a, b, binaryMultiply)
 }
 
-var binaryDivision = toBinaryNumericValues(numtower.BinaryTowerFunc{
-	OnInt64s: func(a, b int64) (interface{}, error) {
-		if b == 0 {
-			return nil, lisperr.DivisionByZero
-		}
-		x := float64(a) / float64(b)
-		return real.FromFloat64(x), nil
-	},
-	OnFloat64s: func(a, b float64) (interface{}, error) {
-		if b == 0 {
-			return nil, lisperr.DivisionByZero
-		}
-		return real.FromFloat64(a / b), nil
-	},
-}.Call)
+var binaryDivision func(a, b types.Value) (types.Value, error)
+
+func init() {
+	binaryDivision = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
+		OnInt64s: func(a, b int64) (interface{}, error) {
+			if b == 0 {
+				return nil, lisperr.DivisionByZero
+			}
+			x := float64(a) / float64(b)
+			return real.FromFloat64(x), nil
+		},
+		OnFloat64s: func(a, b float64) (interface{}, error) {
+			if b == 0 {
+				return nil, lisperr.DivisionByZero
+			}
+			return real.FromFloat64(a / b), nil
+		},
+	}.Call, func(a, b *numrange.Range) (interface{}, error) {
+		return rangeDiv(a, b)
+	}))
+}
 
 func BinaryDivision(a, b types.Value) (types.Value, error) {
 	if fullyunknown.Is(a) || fullyunknown.Is(b) {

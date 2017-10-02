@@ -1,8 +1,6 @@
 package numerics
 
 import (
-	"errors"
-
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numrange"
@@ -80,6 +78,14 @@ func numericMulOrPanic(a, b types.Numeric) types.Numeric {
 	return result.(types.Numeric)
 }
 
+func numericDivOrPanic(a, b types.Numeric) types.Numeric {
+	result, err := BinaryDivision(a, b)
+	if err != nil {
+		panic(err)
+	}
+	return result.(types.Numeric)
+}
+
 func rangeMul(a, b *numrange.Range) (types.Value, error) {
 	vals := []valueWithInclusion{
 		{
@@ -128,11 +134,17 @@ func rangeMul(a, b *numrange.Range) (types.Value, error) {
 }
 
 var zeroValueNumeric = integer.FromInt64(0).(types.Numeric)
+var oneValueNumeric = integer.FromInt64(1).(types.Numeric)
 
 func rangeDiv(a, b *numrange.Range) (types.Value, error) {
 	if b.Contains(zeroValueNumeric) {
 		return nil, lisperr.DivisionByZero
 	}
 
-	return nil, errors.New("TODO: range division")
+	lowerBoundInverted := numericDivOrPanic(oneValueNumeric, b.LowerBound())
+	upperBoundInverted := numericDivOrPanic(oneValueNumeric, b.UpperBound())
+
+	bInv := numrange.New(upperBoundInverted, lowerBoundInverted, b.UpperBoundInclusive(), b.LowerBoundInclusive())
+
+	return rangeMul(a, bInv)
 }

@@ -1,0 +1,13 @@
+(_assert! "maybe" (= (* (number-in-range 'from 0 'to 10) 2) 15))
+(_assert! "false" (= (* (number-in-range 'from 0 'to 10) 2) 21))
+
+(_assert! "false" (= (+ (number-in-range 'from 0 'to 10) 2) 15))
+(_assert! "maybe" (= (+ (number-in-range 'from 0 'to 10) 2) 12))
+(_assert! "false" (= (+ (number-in-range 'from 0 'below 10) 2) 12))
+
+(_assert! "false" (= (/ 100 (number-in-range 'from 2 'to 10)) 51))
+(_assert! "maybe" (= (/ 100 (number-in-range 'from 2 'to 10)) 50))
+(_assert! "maybe" (= (/ 100 (number-in-range 'from 2 'to 10)) 25))
+(_assert! "maybe" (= (/ 100 (number-in-range 'from 2 'to 10)) 10))
+(_assert! "false" (= (/ 100 (number-in-range 'from 2 'to 10)) 9.999))
+(_assert! "false" (= (/ 100 (number-in-range 'from 2 'to 10)) 9))
