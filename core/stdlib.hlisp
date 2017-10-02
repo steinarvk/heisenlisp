@@ -62,3 +62,6 @@
        (let ((vs (possible-values x)))
          (or (= (list true false) vs)
              (= (list false true) vs)))))
+
+(defun! even? (n) (and (integer? n) (= 0 (mod n 2))))
+(defun! odd? (n) (and (integer? n) (not (even? n))))

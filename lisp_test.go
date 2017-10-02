@@ -285,6 +285,14 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_maybe? (= (dec (any-of 0 1)) 0))`,
 		`(not (= (dec (dec (any-of 0 1))) 0))`,
 		`(not (= NaN NaN))`,
+		`(odd? 3)`,
+		`(even? 4)`,
+		`(_maybe? (odd? (any-of 3 4)))`,
+		`(_maybe? (even? (any-of 3 4)))`,
+		`(not (odd? (any-of 6 4)))`,
+		`(not (even? (any-of 3 5)))`,
+		`(odd? (any-of 7 5))`,
+		`(even? (any-of 8 10))`,
 	}
 
 	for i, s := range exprs {
