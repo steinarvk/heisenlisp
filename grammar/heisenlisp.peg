@@ -71,7 +71,10 @@ String <- '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   return str.New(s), nil
 }
 
-Real <- ( '-'? [0-9] [0-9]* '.' [0-9]* ) {
+Real <- (
+    ( '-'? [0-9] [0-9]* '.' [0-9]* )
+  / ( '-'? [0-9] [0-9]* ('.' [0-9]*)? [eE] '-'? [0-9]+ )
+) {
   x, err := strconv.ParseFloat(string(c.text), 64)
   if err != nil {
     return nil, err
