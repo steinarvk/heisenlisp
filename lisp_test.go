@@ -304,6 +304,7 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(equals? (list 1 2 3) (filter (is-not-equal-to 5) (list 1 5 2 3)))`,
 		`(_maybe? (equals? (list 1 2 3) (filter (is-not-equal-to (any-of 5 6)) (list 1 5 2 3))))`,
 		`(_maybe? (contains? 3 (map inc (filter (is-not-equal-to (any-of 2 10)) (list 1 2 3 4)))))`,
+		`(= 0.5 (/ 2))`,
 	}
 
 	for i, s := range exprs {
