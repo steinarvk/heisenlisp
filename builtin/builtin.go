@@ -536,14 +536,6 @@ func BindDefaults(e types.Env) {
 		}
 	})
 
-	Unary(e, "length", func(a types.Value) (types.Value, error) {
-		xs, err := expr.UnwrapList(a)
-		if err != nil {
-			return nil, err
-		}
-		return integer.FromInt(len(xs)), nil
-	})
-
 	Binary(e, "apply", func(f, args types.Value) (types.Value, error) {
 		callable, ok := f.(types.Callable)
 		if !ok {
