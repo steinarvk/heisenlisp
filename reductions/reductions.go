@@ -1,5 +1,8 @@
 package reductions
 
+// Note: these aren't all reductions anymore, there's
+// other things like map and filter.
+
 import (
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/types"
@@ -204,4 +207,56 @@ func Filter(f func(a types.Value) (types.Value, error), consish types.Value) (ty
 		return nil, err
 	}
 	return Reversed(rv)
+}
+
+func mapWithUncertainty(f func(types.Value) (types.Value, error), consish types.Value) (types.Value, error) {
+	if null.IsNil(consish) {
+		return null.Nil, nil
+	}
+
+	if car, cdr, ok := cons.Decompose(consish); ok {
+		carMapped, err := f(car)
+		if err != nil {
+			return nil, err
+		}
+		cdrMapped, err := mapWithUncertainty(f, cdr)
+		if err != nil {
+			return nil, err
+		}
+		return cons.New(carMapped, cdrMapped), nil
+	}
+
+	if car, cdr, ok := optcons.Decompose(consish); ok {
+		carMapped, err := f(car)
+		if err != nil {
+			return nil, err
+		}
+		cdrMapped, err := mapWithUncertainty(f, cdr)
+		if err != nil {
+			return nil, err
+		}
+		return optcons.New(carMapped, cdrMapped), nil
+	}
+
+	if !anyof.Is(consish) {
+		return nil, lisperr.UnexpectedValue{"cons or enumerable", consish}
+	}
+
+	values, _ := anyof.PossibleValues(consish)
+
+	var rv []types.Value
+
+	for _, realConsish := range values {
+		possible, err := mapWithUncertainty(f, realConsish)
+		if err != nil {
+			return nil, err
+		}
+		rv = append(rv, possible)
+	}
+
+	return anyof.New(rv)
+}
+
+func Map(f func(a types.Value) (types.Value, error), consish types.Value) (types.Value, error) {
+	return mapWithUncertainty(f, consish)
 }

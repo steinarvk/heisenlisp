@@ -563,27 +563,16 @@ func BindDefaults(e types.Env) {
 	})
 
 	Binary(e, "map", func(f, l types.Value) (types.Value, error) {
-		// TODO: handle uncertainty
 		callable, ok := f.(types.Callable)
 		if !ok {
-			return nil, errors.New("not a callable")
+			return nil, lisperr.UnexpectedValue{"callable", f}
 		}
 
-		xs, err := expr.UnwrapList(l)
-		if err != nil {
-			return nil, err
+		cb := func(a types.Value) (types.Value, error) {
+			return callable.Call([]types.Value{a})
 		}
 
-		var rv []types.Value
-		for _, x := range xs {
-			xm, err := callable.Call([]types.Value{x})
-			if err != nil {
-				return nil, err
-			}
-			rv = append(rv, xm)
-		}
-
-		return expr.WrapList(rv), nil
+		return reductions.Map(cb, l)
 	})
 
 	Binary(e, "any?", func(f, l types.Value) (types.Value, error) {
