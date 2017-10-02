@@ -65,3 +65,5 @@
 
 (defun! even? (n) (and (integer? n) (= 0 (mod n 2))))
 (defun! odd? (n) (and (integer? n) (not (even? n))))
+
+(defun! contains? (x xs) (any? (lambda (y) (= x y)) xs))

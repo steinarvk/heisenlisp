@@ -10,6 +10,7 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
+	"github.com/steinarvk/heisenlisp/value/unknowns/optcons"
 )
 
 const TypeName = "any-of"
@@ -159,6 +160,10 @@ func PossibleValues(v types.Value) ([]types.Value, bool) {
 	_, ok := v.(types.Unknown)
 	if !ok {
 		return []types.Value{v}, true
+	}
+
+	if v1, v2, ok := optcons.OptConsValues(v); ok {
+		return []types.Value{v1, v2}, true
 	}
 
 	a, ok := v.(anyOf)

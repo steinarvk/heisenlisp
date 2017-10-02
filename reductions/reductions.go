@@ -4,10 +4,12 @@ import (
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/typeset"
+	"github.com/steinarvk/heisenlisp/unknown"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/null"
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
+	"github.com/steinarvk/heisenlisp/value/unknowns/optcons"
 )
 
 // how to stop exponential explosion here?
@@ -110,4 +112,96 @@ func Foldable(consish types.Value) types.Value {
 	default:
 		panic("impossible")
 	}
+}
+
+func FilterReversed(f func(a types.Value) (types.Value, error), consish types.Value) (types.Value, error) {
+	g := func(alreadyFolded, val types.Value) (types.Value, error) {
+		result, err := f(val)
+		if err != nil {
+			return nil, err
+		}
+		tv, err := unknown.TruthValue(result)
+		if err != nil {
+			return nil, err
+		}
+		switch tv {
+		case types.True:
+			return cons.New(val, alreadyFolded), nil
+		case types.False:
+			return alreadyFolded, nil
+		default:
+			return optcons.New(val, alreadyFolded), nil
+		}
+	}
+	return FoldLeft(g, null.Nil, consish)
+}
+
+func linearOnEach(f func(types.Value, bool), consish types.Value) (bool, error) {
+	if null.IsNil(consish) {
+		return true, nil
+	}
+
+	if car, cdr, ok := cons.Decompose(consish); ok {
+		f(car, true)
+		return linearOnEach(f, cdr)
+	}
+
+	if car, cdr, ok := optcons.Decompose(consish); ok {
+		f(car, false)
+		return linearOnEach(f, cdr)
+	}
+
+	_, ok := anyof.PossibleValues(consish)
+	if !ok {
+		return false, lisperr.UnexpectedValue{"cons or enumerable", consish}
+	}
+
+	// Linear iteration on a value with an any-of is impossible.
+	return false, nil
+}
+
+type reversalEntry struct {
+	value   types.Value
+	creator func(a, b types.Value) types.Value
+}
+
+func resolveReversalEntries(entries []reversalEntry) types.Value {
+	if len(entries) == 0 {
+		return null.Nil
+	}
+	e := entries[len(entries)-1]
+	rest := entries[:len(entries)-1]
+	return e.creator(e.value, resolveReversalEntries(rest))
+}
+
+func Reversed(consish types.Value) (types.Value, error) {
+	var inorder []reversalEntry
+
+	f := func(val types.Value, alwaysPresent bool) {
+		var entry reversalEntry
+		if alwaysPresent {
+			entry = reversalEntry{val, cons.New}
+		} else {
+			entry = reversalEntry{val, optcons.New}
+		}
+		inorder = append(inorder, entry)
+	}
+
+	ok, err := linearOnEach(f, consish)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, lisperr.NotImplemented("cannot reverse non-linearly-iterable list-like")
+	}
+
+	return resolveReversalEntries(inorder), nil
+}
+
+func Filter(f func(a types.Value) (types.Value, error), consish types.Value) (types.Value, error) {
+	rv, err := FilterReversed(f, consish)
+	if err != nil {
+		return nil, err
+	}
+	return Reversed(rv)
 }

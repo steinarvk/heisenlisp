@@ -23,3 +23,7 @@ type UnboundVariable string
 func (u UnboundVariable) Error() string {
 	return fmt.Sprintf("unbound variable %q", string(u))
 }
+
+type NotImplemented string
+
+func (n NotImplemented) Error() string { return fmt.Sprintf("not implemented: %s", string(n)) }

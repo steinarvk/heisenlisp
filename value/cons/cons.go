@@ -72,7 +72,7 @@ func NewChain(carItems []types.Value, cdr types.Value) types.Value {
 	return New(carItems[0], NewChain(carItems[1:], cdr))
 }
 
-func New(car, cdr types.Value) *consValue {
+func New(car, cdr types.Value) types.Value {
 	if car == nil {
 		car = null.Nil
 	}

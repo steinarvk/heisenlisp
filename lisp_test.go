@@ -293,6 +293,14 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(not (even? (any-of 3 5)))`,
 		`(odd? (any-of 7 5))`,
 		`(even? (any-of 8 10))`,
+		`(_maybe? (contains? 6 (filter-reversed (lambda (n) (> n (any-of 5 6))) (range 10))))`,
+		`(contains? 7 (filter-reversed (lambda (n) (> n (any-of 5 6))) (range 10)))`,
+		`(not (contains? 5 (filter-reversed (lambda (n) (> n (any-of 5 6))) (range 10))))`,
+		`(equals? (list 1 2 3) (reversed (list 3 2 1)))`,
+		`(equals? nil (reversed nil))`,
+		`(_maybe? (contains? 6 (filter (lambda (n) (> n (any-of 5 6))) (range 10))))`,
+		`(contains? 7 (filter (lambda (n) (> n (any-of 5 6))) (range 10)))`,
+		`(not (contains? 5 (filter (lambda (n) (> n (any-of 5 6))) (range 10))))`,
 	}
 
 	for i, s := range exprs {

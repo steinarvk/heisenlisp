@@ -559,17 +559,7 @@ func BindDefaults(e types.Env) {
 	})
 
 	Unary(e, "reversed", func(l types.Value) (types.Value, error) {
-		xs, err := expr.UnwrapList(l)
-		if err != nil {
-			return nil, err
-		}
-
-		var rv []types.Value
-		for i := len(xs) - 1; i >= 0; i-- {
-			rv = append(rv, xs[i])
-		}
-
-		return cons.FromProperList(rv), nil
+		return reductions.Reversed(l)
 	})
 
 	Binary(e, "map", func(f, l types.Value) (types.Value, error) {
@@ -691,6 +681,32 @@ func BindDefaults(e types.Env) {
 
 	Unary(e, "list?", func(l types.Value) (types.Value, error) {
 		return reductions.Foldable(l), nil
+	})
+
+	Binary(e, "filter", func(f, l types.Value) (types.Value, error) {
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, lisperr.UnexpectedValue{"callable", f}
+		}
+
+		cb := func(a types.Value) (types.Value, error) {
+			return callable.Call([]types.Value{a})
+		}
+
+		return reductions.Filter(cb, l)
+	})
+
+	Binary(e, "filter-reversed", func(f, l types.Value) (types.Value, error) {
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, lisperr.UnexpectedValue{"callable", f}
+		}
+
+		cb := func(a types.Value) (types.Value, error) {
+			return callable.Call([]types.Value{a})
+		}
+
+		return reductions.FilterReversed(cb, l)
 	})
 
 	Ternary(e, "fold-left", func(f, initial, l types.Value) (types.Value, error) {
