@@ -2,7 +2,6 @@ package number
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 
 	"github.com/steinarvk/heisenlisp/types"
@@ -15,13 +14,6 @@ func FromInt64(n int64) types.Numeric {
 }
 
 func FromFloat64(x float64) types.Numeric {
-	// TODO? -- should we do this?
-	// seems contrary to contagion.
-	_, frac := math.Modf(x)
-	if frac == 0 {
-		return integer.FromInt64(int64(x))
-	}
-
 	return real.FromFloat64(x)
 }
 
