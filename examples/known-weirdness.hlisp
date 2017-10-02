@@ -1,0 +1,22 @@
+(defun! double-number (x) (+ x x))
+
+(_assert! "42" (double-number 21))
+
+;; Intuitively you might expect
+;;   (double-number (any-of 3 4)) ==> (any-of 6 8)
+
+;; However, hlisp may return an unknown that is not the strictest
+;; possible unknown that covers the true answer set.
+
+;; In actual fact, in the implementation right now:
+
+(_assert! "#any-of(6 7 8)" (double-number (any-of 3 4)))
+
+;; This is because:
+
+(_assert! "#any-of(6 7 8)" (+ (any-of 3 4) (any-of 3 4)))
+
+;; Notice that in that case, this is actually the correct result.
+
+;; The result of (double-number (any-of 3 4)) may be changed later;
+;; it is NOT guaranteed that (_maybe? (= 7 (double-number (any-of 3 4)))).
