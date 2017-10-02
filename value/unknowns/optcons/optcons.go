@@ -42,7 +42,7 @@ func (o *optCons) Falsey() bool {
 func (o *optCons) ActualTypeName() ([]string, bool) {
 	unkCdr, ok := o.cdr.(types.Unknown)
 	if !ok {
-		tn := unkCdr.TypeName()
+		tn := o.cdr.TypeName()
 		if tn == cons.TypeName {
 			return []string{cons.TypeName}, true
 		}

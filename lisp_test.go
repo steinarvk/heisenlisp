@@ -301,6 +301,8 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_maybe? (contains? 6 (filter (lambda (n) (> n (any-of 5 6))) (range 10))))`,
 		`(contains? 7 (filter (lambda (n) (> n (any-of 5 6))) (range 10)))`,
 		`(not (contains? 5 (filter (lambda (n) (> n (any-of 5 6))) (range 10))))`,
+		`(equals? (list 1 2 3) (filter (is-not-equal-to 5) (list 1 5 2 3)))`,
+		`(_maybe? (equals? (list 1 2 3) (filter (is-not-equal-to (any-of 5 6)) (list 1 5 2 3))))`,
 	}
 
 	for i, s := range exprs {
