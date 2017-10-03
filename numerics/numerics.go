@@ -275,7 +275,10 @@ func init() {
 			if new(big.Int).Cmp(b) == 0 {
 				return nil, lisperr.DivisionByZero
 			}
-			return number.FromBigInt(new(big.Int).Div(a, b)), nil
+			result := new(big.Rat)
+			result.SetInt(a)
+			result.Quo(result, new(big.Rat).SetInt(b))
+			return number.FromBigRat(result), nil
 		},
 		OnBigrats: func(a, b *big.Rat) (interface{}, error) {
 			if new(big.Rat).Cmp(b) == 0 {
