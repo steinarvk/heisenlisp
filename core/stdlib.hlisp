@@ -7,6 +7,8 @@
       (/ 1 numerator)
       (low-level-divide numerator (apply * denominators))))
 
+(defun! to-floating-point (x) (+ 0.0 x))
+
 (defun! nan? (x)
   (let ((xs (possible-values x)))
     (and (_cons? xs) (any? _nan?  xs))))
