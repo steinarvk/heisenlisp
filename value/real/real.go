@@ -3,6 +3,7 @@ package real
 import (
 	"fmt"
 	"math"
+	"math/big"
 
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -29,6 +30,9 @@ func (v realValue) TypeName() string { return TypeName }
 func (v realValue) AsInt64() (int64, bool) {
 	return 0, false
 }
+
+func (v realValue) AsBigint() (*big.Int, bool) { return nil, false }
+func (v realValue) AsBigrat() (*big.Rat, bool) { return nil, false }
 
 func (v realValue) AsDouble() (float64, bool) {
 	return float64(v), true

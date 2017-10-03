@@ -1,10 +1,9 @@
 package integer
 
-// todo make type itself private
-
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/steinarvk/heisenlisp/types"
@@ -34,6 +33,9 @@ func (_ integer) TypeName() string { return TypeName }
 func (i integer) AsInt64() (int64, bool)    { return int64(i), true }
 func (i integer) AsDouble() (float64, bool) { return float64(i), true }
 
+func (i integer) AsBigint() (*big.Int, bool) { return big.NewInt(int64(i)), true }
+func (i integer) AsBigrat() (*big.Rat, bool) { return big.NewRat(int64(i), 1), true }
+
 func FromInt(v int) types.Numeric { return FromInt64(int64(v)) }
 
 func FromInt64(v int64) types.Numeric {
@@ -51,7 +53,7 @@ func ToInt64(v types.Value) (int64, error) {
 func Parse(s string) (types.Numeric, error) {
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return nil, err
+		return ParseBig(s)
 	}
 	return integer(n), nil
 }

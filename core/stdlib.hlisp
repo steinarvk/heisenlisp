@@ -69,3 +69,5 @@
 
 (defun! is-equal-to (x) (lambda (y) (= x y)))
 (defun! is-not-equal-to (x) (lambda (y) (not (= x y))))
+
+(defun! factorial (n) (if (<= n 0) 1 (* n (factorial (dec n)))))

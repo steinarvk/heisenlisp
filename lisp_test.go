@@ -305,6 +305,10 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(_maybe? (equals? (list 1 2 3) (filter (is-not-equal-to (any-of 5 6)) (list 1 5 2 3))))`,
 		`(_maybe? (contains? 3 (map inc (filter (is-not-equal-to (any-of 2 10)) (list 1 2 3 4)))))`,
 		`(= 0.5 (/ 2))`,
+		`(= (factorial 5) 120)`,
+		`(= (factorial 50) 30414093201713378043612608166064768844377641568960512000000000000)`,
+		`(= 'integer (type (* (+ 1 (* (/ 400) 40090)) 40)))`,
+		`(= 'integer (type (* 3/14 14)))`,
 	}
 
 	for i, s := range exprs {
@@ -363,6 +367,8 @@ var values = []string{
 	"(unknown-of-type 'integer)",
 	"(number-in-range 'from 1 'to 42)",
 	"NaN",
+	"1/2",
+	"36893488147419103232",
 }
 
 func TestUnaryInvariants(t *testing.T) {

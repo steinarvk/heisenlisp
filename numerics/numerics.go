@@ -3,8 +3,10 @@ package numerics
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/steinarvk/heisenlisp/lisperr"
+	"github.com/steinarvk/heisenlisp/number"
 	"github.com/steinarvk/heisenlisp/numcmp"
 	"github.com/steinarvk/heisenlisp/numrange"
 	"github.com/steinarvk/heisenlisp/numtower"
@@ -12,7 +14,6 @@ import (
 	"github.com/steinarvk/heisenlisp/unknown"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/integer"
-	"github.com/steinarvk/heisenlisp/value/real"
 
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
@@ -154,15 +155,30 @@ func fromInt64(n int64) types.Value {
 	return integer.FromInt64(n)
 }
 
+func areSmall(a, b int64) bool {
+	return int64(int32(a)) == a && int64(int32(b)) == b
+}
+
 var binaryPlus func(a, b types.Value) (types.Value, error)
 
 func init() {
 	binaryPlus = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
 		OnInt64s: func(a, b int64) (interface{}, error) {
-			return integer.FromInt64(a + b), nil
+			if areSmall(a, b) {
+				return number.FromInt64(a + b), nil
+			}
+			rv := big.NewInt(a)
+			rv.Add(rv, big.NewInt(b))
+			return number.FromBigInt(rv), nil
+		},
+		OnBigints: func(a, b *big.Int) (interface{}, error) {
+			return number.FromBigInt(new(big.Int).Add(a, b)), nil
+		},
+		OnBigrats: func(a, b *big.Rat) (interface{}, error) {
+			return number.FromBigRat(new(big.Rat).Add(a, b)), nil
 		},
 		OnFloat64s: func(a, b float64) (interface{}, error) {
-			return real.FromFloat64(a + b), nil
+			return number.FromFloat64(a + b), nil
 		},
 	}.Call, func(a, b *numrange.Range) (interface{}, error) {
 		return rangeAdd(a, b)
@@ -182,10 +198,21 @@ var binaryMinus func(a, b types.Value) (types.Value, error)
 func init() {
 	binaryMinus = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
 		OnInt64s: func(a, b int64) (interface{}, error) {
-			return integer.FromInt64(a - b), nil
+			if areSmall(a, b) {
+				return number.FromInt64(a - b), nil
+			}
+			rv := big.NewInt(a)
+			rv.Sub(rv, big.NewInt(b))
+			return number.FromBigInt(rv), nil
+		},
+		OnBigints: func(a, b *big.Int) (interface{}, error) {
+			return number.FromBigInt(new(big.Int).Sub(a, b)), nil
+		},
+		OnBigrats: func(a, b *big.Rat) (interface{}, error) {
+			return number.FromBigRat(new(big.Rat).Sub(a, b)), nil
 		},
 		OnFloat64s: func(a, b float64) (interface{}, error) {
-			return real.FromFloat64(a - b), nil
+			return number.FromFloat64(a - b), nil
 		},
 	}.Call, func(a, b *numrange.Range) (interface{}, error) {
 		return rangeSub(a, b)
@@ -205,10 +232,21 @@ var binaryMultiply func(a, b types.Value) (types.Value, error)
 func init() {
 	binaryMultiply = castingToValue(wrappedWithRanges(numtower.BinaryTowerFunc{
 		OnInt64s: func(a, b int64) (interface{}, error) {
-			return integer.FromInt64(a * b), nil
+			if areSmall(a, b) {
+				return number.FromInt64(a * b), nil
+			}
+			rv := big.NewInt(a)
+			rv.Mul(rv, big.NewInt(b))
+			return number.FromBigInt(rv), nil
+		},
+		OnBigints: func(a, b *big.Int) (interface{}, error) {
+			return number.FromBigInt(new(big.Int).Mul(a, b)), nil
+		},
+		OnBigrats: func(a, b *big.Rat) (interface{}, error) {
+			return number.FromBigRat(new(big.Rat).Mul(a, b)), nil
 		},
 		OnFloat64s: func(a, b float64) (interface{}, error) {
-			return real.FromFloat64(a * b), nil
+			return number.FromFloat64(a * b), nil
 		},
 	}.Call, func(a, b *numrange.Range) (interface{}, error) {
 		return rangeMul(a, b)
@@ -231,14 +269,25 @@ func init() {
 			if b == 0 {
 				return nil, lisperr.DivisionByZero
 			}
-			x := float64(a) / float64(b)
-			return real.FromFloat64(x), nil
+			return number.FromBigRat(big.NewRat(a, b)), nil
+		},
+		OnBigints: func(a, b *big.Int) (interface{}, error) {
+			if new(big.Int).Cmp(b) == 0 {
+				return nil, lisperr.DivisionByZero
+			}
+			return number.FromBigInt(new(big.Int).Div(a, b)), nil
+		},
+		OnBigrats: func(a, b *big.Rat) (interface{}, error) {
+			if new(big.Rat).Cmp(b) == 0 {
+				return nil, lisperr.DivisionByZero
+			}
+			return number.FromBigRat(new(big.Rat).Quo(a, b)), nil
 		},
 		OnFloat64s: func(a, b float64) (interface{}, error) {
 			if b == 0 {
 				return nil, lisperr.DivisionByZero
 			}
-			return real.FromFloat64(a / b), nil
+			return number.FromFloat64(a / b), nil
 		},
 	}.Call, func(a, b *numrange.Range) (interface{}, error) {
 		return rangeDiv(a, b)

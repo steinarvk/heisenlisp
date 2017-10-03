@@ -35,6 +35,7 @@ Expr <- (
   / String
   / QuotingExpr
   / Real
+  / Rational
   / Integer
   / Identifier
   / Unknown
@@ -74,6 +75,10 @@ Real <- (
     ( '-'? [0-9] [0-9]* '.' [0-9]* )
   / ( '-'? [0-9] [0-9]* ('.' [0-9]*)? [eE] '-'? [0-9]+ )
 ) {
+  return number.FromString(string(c.text))
+}
+
+Rational <- ( '-'? [0-9]+ '/' [0-9]+ ) {
   return number.FromString(string(c.text))
 }
 

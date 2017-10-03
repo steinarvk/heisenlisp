@@ -2,6 +2,8 @@
 package numcmp
 
 import (
+	"math/big"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/numtower"
 	"github.com/steinarvk/heisenlisp/types"
@@ -40,6 +42,14 @@ var cmpNumerics = numtower.BinaryTowerFunc{
 		default:
 			return Equal, nil
 		}
+	},
+	OnBigints: func(a, b *big.Int) (interface{}, error) {
+		metricNumericComparisons.WithLabelValues("bigint").Inc()
+		return a.Cmp(b), nil
+	},
+	OnBigrats: func(a, b *big.Rat) (interface{}, error) {
+		metricNumericComparisons.WithLabelValues("bigrat").Inc()
+		return a.Cmp(b), nil
 	},
 	OnFloat64s: func(a, b float64) (interface{}, error) {
 		metricNumericComparisons.WithLabelValues("float64").Inc()

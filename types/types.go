@@ -1,5 +1,7 @@
 package types
 
+import "math/big"
+
 type TernaryTruthValue string
 
 const (
@@ -56,5 +58,7 @@ type Env interface {
 type Numeric interface {
 	Value
 	AsInt64() (int64, bool)
+	AsBigint() (*big.Int, bool)
+	AsBigrat() (*big.Rat, bool)
 	AsDouble() (float64, bool)
 }
