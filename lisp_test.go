@@ -312,6 +312,8 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= 'floating-point (type (to-floating-point 3/14)))`,
 		`(not (= 'floating-point (type 3/14)))`,
 		`(= (factorial 50) (* (/ (factorial 50) 123456789101232) 123456789101232))`,
+		`(= 42 (handle-exception 42 ((x) (list x x))))`,
+		`(= (list "foo" "foo") (handle-exception (throw-exception "foo") ((x) (list x x))))`,
 	}
 
 	for i, s := range exprs {
