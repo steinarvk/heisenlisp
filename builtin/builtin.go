@@ -48,7 +48,8 @@ func wrap(name string, f func(a []types.Value) (types.Value, error)) func([]type
 	fw := func(vs []types.Value) (types.Value, error) {
 		rv, err := f(vs)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %v", name, err)
+			return nil, err
+			// return nil, fmt.Errorf("%s: %v", name, err)
 		}
 		return rv, nil
 	}
@@ -291,6 +292,50 @@ func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 	return expr.Progn(childEnv, unevaluated[1:])
 }
 
+type handleExceptionSpecialForm struct{}
+
+func (i handleExceptionSpecialForm) TypeName() string                    { return "special" }
+func (i handleExceptionSpecialForm) IsPure() bool                        { return true }
+func (i handleExceptionSpecialForm) String() string                      { return specialFormString("handle-exception") }
+func (i handleExceptionSpecialForm) Falsey() bool                        { return false }
+func (i handleExceptionSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
+func (i handleExceptionSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.Value, error) {
+	// (handle-exception (progn body) ((x) (list "error:" x)))
+	if len(unevaluated) != 2 {
+		return nil, fmt.Errorf("handle-exception: not exactly two arguments")
+	}
+
+	errorHandlerDefinition, err := expr.UnwrapFixedList(unevaluated[1], 2)
+	if err != nil {
+		return nil, err
+	}
+
+	errorHandlerBody := errorHandlerDefinition[1]
+
+	errorArgList, err := expr.UnwrapFixedList(errorHandlerDefinition[0], 1)
+	if err != nil {
+		return nil, err
+	}
+
+	errorVarName, err := symbol.Name(errorArgList[0])
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := unevaluated[0].Eval(e)
+	if err == nil {
+		return val, nil
+	}
+
+	if exc, ok := err.(lisperr.LispException); ok {
+		childEnv := env.New(e)
+		childEnv.Bind(errorVarName, exc.Value())
+		return errorHandlerBody.Eval(childEnv)
+	}
+
+	return nil, err
+}
+
 type andSpecialForm struct{}
 
 func (i andSpecialForm) TypeName() string                    { return "special" }
@@ -403,6 +448,7 @@ func BindDefaults(e types.Env) {
 	e.Bind("let", &letSpecialForm{})
 	e.Bind("and", &andSpecialForm{})
 	e.Bind("or", &orSpecialForm{})
+	e.Bind("handle-exception", &handleExceptionSpecialForm{})
 
 	e.Bind("nil", null.Nil)
 	e.Bind("true", boolean.True)
@@ -870,6 +916,11 @@ func BindDefaults(e types.Env) {
 			xs = append(xs, integer.FromInt64(i))
 		}
 		return expr.WrapList(xs), nil
+	})
+
+	// note: this is a loophole from the side effect rule.
+	Unary(e, "throw-exception", func(v types.Value) (types.Value, error) {
+		return nil, lisperr.NewException(v)
 	})
 
 	Binary(e, "low-level-plus", numerics.BinaryPlus)

@@ -7,6 +7,20 @@ import (
 	"github.com/steinarvk/heisenlisp/types"
 )
 
+type LispException struct {
+	value types.Value
+}
+
+func NewException(v types.Value) LispException {
+	return LispException{v}
+}
+
+func (e LispException) Value() types.Value { return e.value }
+
+func (e LispException) Error() string {
+	return fmt.Sprintf("exception: %v", e.value)
+}
+
 type UnexpectedValue struct {
 	Expectation string
 	Value       types.Value

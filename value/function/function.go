@@ -79,7 +79,8 @@ func (f *functionValue) Call(params []types.Value) (types.Value, error) {
 
 	env, err := f.lambdaList.BindArgs(f.lexicalEnv, params, f.pure)
 	if err != nil {
-		return nil, fmt.Errorf("%s%v", f.errorprefix(), err)
+		return nil, err
+		// return nil, fmt.Errorf("%s%v", f.errorprefix(), err)
 	}
 
 	for _, stmt := range f.body {
