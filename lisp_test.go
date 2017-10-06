@@ -314,6 +314,7 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= (factorial 50) (* (/ (factorial 50) 123456789101232) 123456789101232))`,
 		`(= 42 (handle-exception 42 ((x) (list x x))))`,
 		`(= (list "foo" "foo") (handle-exception (throw-exception "foo") ((x) (list x x))))`,
+		`(= (list (list 1 2) (list 1 3)) (possible-values (any-of (list 1 2) (list 1 2) (list 1 3))))`,
 	}
 
 	for i, s := range exprs {

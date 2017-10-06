@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/steinarvk/heisenlisp/cyclebreaker"
+	"github.com/steinarvk/heisenlisp/dedupe"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
@@ -78,17 +78,14 @@ func (a anyOf) possibleValues() []types.Value {
 func newRaw(xs []types.Value) types.Value {
 	rv := anyOf{}
 
+	deduper := dedupe.New()
+
 	tps := map[string]struct{}{}
 
 	addIfNew := func(singleValue types.Value) {
-		// todo: do this more efficiently.
-		for _, old := range rv.vals {
-			if cyclebreaker.AtomEquals(old, singleValue) {
-				return
-			}
+		if deduper.Add(singleValue) {
+			tps[singleValue.TypeName()] = struct{}{}
 		}
-		tps[singleValue.TypeName()] = struct{}{}
-		rv.vals = append(rv.vals, singleValue)
 	}
 
 	for _, x := range xs {
@@ -108,6 +105,7 @@ func newRaw(xs []types.Value) types.Value {
 	}
 	sort.Strings(typesSlice)
 
+	rv.vals = deduper.Slice()
 	rv.types = typesSlice
 
 	return rv
