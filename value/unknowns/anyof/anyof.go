@@ -17,8 +17,8 @@ const TypeName = "any-of"
 
 var _ types.Unknown = anyOf{}
 
-const (
-	maxAnyOfElements = 100
+var (
+	MaxAnyOfElements = int64(100)
 )
 
 type anyOf struct {
@@ -142,7 +142,7 @@ func New(xs []types.Value) (types.Value, error) {
 		return vals[0], nil
 	}
 
-	if len(vals) > maxAnyOfElements {
+	if int64(len(vals)) > MaxAnyOfElements {
 		// past a certain limit we start discarding information to not allow the
 		// work associated with keeping track of uncertainty to grow without bound.
 		// note that returning a FullyUnknown is the last resort; other options
