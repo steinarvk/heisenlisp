@@ -115,6 +115,22 @@ func mainCoreREPL() error {
 	return nil
 }
 
+func serveMetrics(addr string) error {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	http.Handle("/metrics", promhttp.Handler())
+	log.Printf("listening on: http://%s/metrics", listener.Addr())
+	go func() {
+		// Listen forever, unless something goes wrong.
+		log.Fatal(http.Serve(listener, nil))
+	}()
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -123,17 +139,9 @@ func main() {
 	}
 
 	if *metrics {
-		listener, err := net.Listen("tcp", *listenAddress)
-		if err != nil {
-			log.Fatal(err)
+		if err := serveMetrics(*listenAddress); err != nil {
+			log.Printf("unable to serve metrics: %v", err)
 		}
-
-		http.Handle("/metrics", promhttp.Handler())
-		log.Printf("listening on: http://%s/metrics", listener.Addr())
-		go func() {
-			// Listen forever, unless something goes wrong.
-			log.Fatal(http.Serve(listener, nil))
-		}()
 	}
 
 	if *script != "" {
