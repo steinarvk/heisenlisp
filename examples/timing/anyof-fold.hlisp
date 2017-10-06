@@ -1,0 +1,9 @@
+(defun! setup-anyof-list (n xs)
+  (let ((result (apply any-of xs)))
+    (map (lambda (x) result) (range n))))
+
+;; This should be linear (because the only possible results at each step are
+;; 0 and 1), but the number of "paths" throught the list-of-anyofs is
+;; exponential.
+(defun! timing-testcase (n)
+  (apply * (setup-anyof-list n (range 2))))
