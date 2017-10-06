@@ -30,6 +30,7 @@ var (
 	verbose       = flag.Bool("verbose", false, "increase verbosity level")
 	listenAddress = flag.String("listen_address", "127.0.0.1:6860", "http address on which to serve metrics")
 	metrics       = flag.Bool("metrics", true, "whether to serve metrics")
+	repl          = flag.Bool("repl", false, "enter REPL even after executing a script")
 )
 
 func mainCoreExecuteScript(filename string) error {
@@ -56,6 +57,11 @@ func mainCoreREPL() error {
 	defer reader.Close()
 
 	root := builtin.NewRootEnv()
+
+	_, err = code.RunFile(root, *script)
+	if err != nil {
+		return err
+	}
 
 	builtin.Unary(root, "_load-file!", func(a types.Value) (types.Value, error) {
 		s, err := expr.StringValue(a)
@@ -144,7 +150,7 @@ func main() {
 		}
 	}
 
-	if *script != "" {
+	if *script != "" && !*repl {
 		if err := mainCoreExecuteScript(*script); err != nil {
 			log.Printf("fatal: %v", err)
 			os.Exit(1)
