@@ -20,6 +20,7 @@ var (
 	exponentialFactor = flag.Float64("exponential_factor", 1.1, "exponential factor when increasing n")
 	script            = flag.String("script", "", "script file to load (optional)")
 	expression        = flag.String("expression", "timing-testcase", "expression (function dependent on one integer parameter")
+	trialIterations   = flag.Int("iterations", 1, "iterations per trial (mean will be taken)")
 	disableAnyofLimit = flag.Bool("disable_anyof_limit", true, "disable the limitation on number of values in an anyof")
 )
 
@@ -31,14 +32,16 @@ type trialResult struct {
 func performTrial(e types.Env, callable types.Callable, n int64) (*trialResult, error) {
 	args := []types.Value{number.FromInt64(n)}
 	t0 := time.Now()
-	_, err := callable.Call(args)
-	if err != nil {
-		return nil, err
+	for i := 0; i < *trialIterations; i++ {
+		_, err := callable.Call(args)
+		if err != nil {
+			return nil, err
+		}
 	}
 	t1 := time.Now()
 	return &trialResult{
 		n:        n,
-		duration: t1.Sub(t0),
+		duration: time.Duration(float64(t1.Sub(t0)) / float64(*trialIterations)),
 	}, nil
 }
 
