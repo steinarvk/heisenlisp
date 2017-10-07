@@ -34,6 +34,9 @@ var (
 type consValue struct {
 	car types.Value
 	cdr types.Value
+
+	conversionsToList int
+	cachedListForm    []types.Value
 }
 
 func (_ *consValue) TypeName() string { return TypeName }
@@ -81,7 +84,10 @@ func New(car, cdr types.Value) types.Value {
 	}
 
 	metricNewCons.Inc()
-	return &consValue{car, cdr}
+	return &consValue{
+		car: car,
+		cdr: cdr,
+	}
 }
 
 func Decompose(v types.Value) (types.Value, types.Value, bool) {
@@ -167,12 +173,24 @@ func (c *consValue) Eval(e types.Env) (types.Value, error) {
 }
 
 func (c *consValue) asProperList() ([]types.Value, bool) {
+	if c.cachedListForm != nil {
+		return c.cachedListForm, true
+	}
+	cache := false
+	c.conversionsToList++
+	if c.conversionsToList > 2 {
+		cache = true
+	}
+
 	var rv []types.Value
 
 	node := c
 	for {
 		rv = append(rv, node.car)
 		if null.IsNil(node.cdr) {
+			if cache {
+				c.cachedListForm = rv
+			}
 			return rv, true
 		}
 
