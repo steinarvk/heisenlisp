@@ -659,3 +659,24 @@ func BenchmarkNormalBinaryCounter20(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkSortList50(b *testing.B) {
+	sortSetupCode := []byte(`
+(set! my-list (append (range 50) (range 50)))
+`)
+	root := builtin.NewRootEnv()
+	_, err := code.Run(root, "<benchmark setup code>", sortSetupCode)
+	if err != nil {
+		b.Fatalf("failed to set up benchmark code: %v", err)
+	}
+
+	sortCode := []byte("(sorted my-list)")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<turing benchmark code>", sortCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", sortCode, err)
+		}
+	}
+}

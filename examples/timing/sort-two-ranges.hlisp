@@ -1,0 +1,2 @@
+(defun! timing-testcase (n)
+  (sorted (append (range n) (range n))))
