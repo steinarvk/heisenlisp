@@ -315,6 +315,15 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= 42 (handle-exception 42 ((x) (list x x))))`,
 		`(= (list "foo" "foo") (handle-exception (throw-exception "foo") ((x) (list x x))))`,
 		`(= (list (list 1 2) (list 1 3)) (possible-values (any-of (list 1 2) (list 1 2) (list 1 3))))`,
+		`(= (list 1 2 3 4 5 6) (list* 1 2 3 (list 4 5 6)))`,
+		`(= (letfunc ((f (x y z) (+ y (* x z)))) (f 2 3 4)) 11)`,
+		`(= (list 1 2 3 4 5 6) (append (list 1 2) (list 3 4) (list 5 6)))`,
+		`(= 3 (let* ((x 0) (y (inc x)) (z (inc y)) (z (+ z y))) z))`,
+		`(= (list 1 2 3 4 5 6 7 8 9) (sorted (list 7 3 2 1 5 4 9 8 6)))`,
+		`(= (list 1 2 3 4 5) (sorted (list 4 3 2 5 1)))`,
+		`(= (list) (sorted nil))`,
+		`(= (list 1) (sorted (list 1)))`,
+		`(= (list 1 2 3) (append nil (list 1 2 3)))`,
 	}
 
 	for i, s := range exprs {

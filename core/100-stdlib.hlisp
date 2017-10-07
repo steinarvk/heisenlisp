@@ -7,6 +7,80 @@
       (/ 1 numerator)
       (low-level-divide numerator (apply * denominators))))
 
+;; TODO: may need to become a builtin to deal with
+;;       uncertainty efficiently.
+(defun! fold-right (f initial xs)
+  (if (nil? xs)
+      initial
+      (f (car xs) (fold-right f initial (cdr xs)))))
+
+(defun! list* (arg &rest args)
+  (when (uncertain? (length args))
+    (throw-exception "list* does not handle unknown-length lists"))
+  (if (nil? args)
+      arg
+      (cons arg (apply list* args))))
+
+(let ((letfunc-binding-to-let-binding
+       (lambda (binding)
+         (let ((name (first binding))
+               (args (second binding))
+               (body (cdr (cdr binding))))
+           (unless (must? (symbol? name))
+             (throw-exception "wanted symbol as binding target"))
+           (unless (must? (cons? args))
+             (throw-exception "wanted list as argument"))
+           `(,name (lambda ,args ,@body))))))
+ (defmacro! letfunc (bindings &rest body)
+   (when (uncertain? bindings)
+     (throw-exception "letfunc bindings cannot be uncertain"))
+   `(let ,(map letfunc-binding-to-let-binding bindings)
+      ,@body)))
+
+(defmacro! let* (bindings &rest body)
+  (if (nil? bindings)
+      `(progn ,@body)
+      (let ((first-binding (first bindings))
+            (rest-of-bindings (cdr bindings)))
+        `(let (,first-binding) (let* ,rest-of-bindings ,@body)))))
+
+(defmacro! letfunc* (bindings &rest body)
+  (if (nil? bindings)
+      `(progn ,@body)
+      (let ((first-binding (first bindings))
+            (rest-of-bindings (cdr bindings)))
+        `(letfunc (,first-binding) (letfunc* ,rest-of-bindings ,@body)))))
+
+;; append should probably become a builtin when we get special
+;; treatment for appending unknowns. It's a very inefficient
+;; implementation at the moment.
+(letfunc* ((cons-replacing-tail (repl)
+            (lambda (carval cdrval)
+              (cons carval (if (nil? cdrval) repl cdrval))))
+           (append-two (xs ys)
+             (if (nil? xs)
+                 ys
+                 (fold-right (cons-replacing-tail ys) nil xs))))
+  (defun! append (&rest lists)
+    (fold-right append-two nil lists)))
+
+(letfunc* ((must-be-smaller (x y) (must? (< x y)))
+           (might-be-larger (x y) (may (must-be-smaller x y)))
+           (must-be-smaller-than (z)
+             (lambda (x) (must-be-smaller x z)))
+           (might-be-larger-than (z)
+             (lambda (x) (might-be-larger x z))))
+  (defun! sorted (xs)
+    (cond
+      ((nil? xs) nil)
+      ((nil? (cdr xs)) xs)
+      (true
+        (let* ((pivot (car xs))
+               (smaller (filter (lambda (x) (must? (< x pivot))) (cdr xs)))
+               (same (filter (lambda (x) (not (or (must? (< x pivot)) (must? (> x pivot))))) (cdr xs)))
+               (larger (filter (lambda (x) (must? (> x pivot))) (cdr xs))))
+          (append (sorted smaller) (list* pivot same) (sorted larger)))))))
+
 (defun! to-floating-point (x) (+ 0.0 x))
 
 (defun! nan? (x)
@@ -30,10 +104,6 @@
 (defun! zero? (n) (_atom-eq? 0 n))
 (set! remainder mod)
 
-(defun! first (xs) (car xs))
-(defun! second (xs) (car (cdr xs)))
-(defun! third (xs) (car (cdr (cdr xs))))
-
 (defun! _dumb-equals? (a b)
   (_atom-eq? (_to-string a) (_to-string b)))
 
@@ -43,20 +113,6 @@
        ,(if (nil? more-clauses)
             nil
             (cons 'cond more-clauses))))
-
-(defun! _cons? (x) (equals? 'cons (_type x)))
-
-(defun! uncertain? (x)
-  (if (_cons? x)
-      (or (uncertain? (car x))
-          (uncertain? (cdr x)))
-      (_uncertain? x)))
-
-(defmacro! when (condition &rest body)
-  `(if ,condition (progn ,@body) nil))
-
-(defmacro! unless (condition &rest body)
-  `(if (not ,condition) (progn ,@body) nil))
 
 (defun! _maybe? (x)
   (and (= 'any-of (_type x))

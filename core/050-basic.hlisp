@@ -1,0 +1,27 @@
+(defun! _cons? (x) (equals? 'cons (_type x)))
+
+(defun! uncertain? (x)
+  (if (_cons? x)
+      (or (uncertain? (car x))
+          (uncertain? (cdr x)))
+      (_uncertain? x)))
+
+(defmacro! when (condition &rest body)
+  `(if ,condition (progn ,@body) nil))
+
+(defmacro! unless (condition &rest body)
+  `(if (not ,condition) (progn ,@body) nil))
+
+(defun! first (xs) (car xs))
+(defun! second (xs) (car (cdr xs)))
+(defun! third (xs) (car (cdr (cdr xs))))
+
+(defun! last (xs)
+  (when (nil? xs)
+    (throw-exception "cannot take last of empty list"))
+  (if (nil? (cdr xs))
+      (car xs)
+      (last (cdr xs))))
+
+(defun! progn (&rest body)
+  (if (nil? body) nil (last body)))
