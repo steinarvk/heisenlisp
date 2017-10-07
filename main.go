@@ -58,9 +58,11 @@ func mainCoreREPL() error {
 
 	root := builtin.NewRootEnv()
 
-	_, err = code.RunFile(root, *script)
-	if err != nil {
-		return err
+	if *script != "" {
+		_, err = code.RunFile(root, *script)
+		if err != nil {
+			return err
+		}
 	}
 
 	builtin.Unary(root, "_load-file!", func(a types.Value) (types.Value, error) {
