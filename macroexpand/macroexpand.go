@@ -8,6 +8,10 @@ import (
 	"github.com/steinarvk/heisenlisp/value/symbol"
 )
 
+func symbolIsSpecial(name string) bool {
+	return name == "quote" || name == "quasiquote"
+}
+
 func macroexpandNonmacroCons(e types.Env, consval types.Value) (types.Value, error) {
 	if null.IsNil(consval) {
 		return null.Nil, nil
@@ -20,6 +24,11 @@ func macroexpandNonmacroCons(e types.Env, consval types.Value) (types.Value, err
 	car, cdr, ok := cons.Decompose(consval)
 	if !ok {
 		panic("not a cons")
+	}
+
+	if name, err := symbol.Name(car); err == nil && symbolIsSpecial(name) {
+		// stop macroexpansion here.
+		return consval, nil
 	}
 
 	// Note that we should not macroexpand cdr, as that
