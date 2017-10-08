@@ -30,7 +30,7 @@ func init() {
 
 type env struct {
 	parent      types.Env
-	bindings    map[string]types.Value
+	bindings    map[uint32]types.Value
 	pureContext bool
 }
 
@@ -38,7 +38,7 @@ func New(parent types.Env) types.Env {
 	metricNewEnvironments.Inc()
 	rv := &env{
 		parent:   parent,
-		bindings: map[string]types.Value{},
+		bindings: map[uint32]types.Value{},
 	}
 	if parent != nil && parent.IsInPureContext() {
 		rv.pureContext = true
@@ -54,12 +54,12 @@ func (e *env) IsInPureContext() bool {
 	return e.pureContext
 }
 
-func (e *env) Bind(k string, v types.Value) {
+func (e *env) Bind(k uint32, v types.Value) {
 	metricEnvValueBinds.Inc()
 	e.bindings[k] = v
 }
 
-func (e *env) BindRoot(k string, v types.Value) {
+func (e *env) BindRoot(k uint32, v types.Value) {
 	if e.parent == nil {
 		e.Bind(k, v)
 		return
@@ -67,7 +67,7 @@ func (e *env) BindRoot(k string, v types.Value) {
 	e.parent.BindRoot(k, v)
 }
 
-func (e *env) Lookup(k string) (types.Value, bool) {
+func (e *env) Lookup(k uint32) (types.Value, bool) {
 	rv, ok := e.bindings[k]
 	if ok {
 		return rv, true

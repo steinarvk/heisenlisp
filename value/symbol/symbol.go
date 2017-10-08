@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/interntable"
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/types"
 )
@@ -19,6 +20,14 @@ var (
 			Namespace: "hlisp",
 			Name:      "new_symbol",
 			Help:      "New symbol values created",
+		},
+	)
+
+	metricNewSymbolInterned = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "new_symbol_interned",
+			Help:      "New unique symbol value interned",
 		},
 	)
 
@@ -45,17 +54,24 @@ func init() {
 	prometheus.MustRegister(metricSymbolConversionsToNative)
 }
 
-type symbolValue string
+var (
+	symboltable = interntable.New()
+)
+
+type symbolValue uint32
 
 func (i symbolValue) String() string {
-	return string(i)
+	name, ok := symboltable.ToString(uint32(i))
+	if !ok {
+		return "#<invalid symbol>"
+	}
+	return name
 }
 
 func (i symbolValue) Eval(e types.Env) (types.Value, error) {
-	n := string(i)
-	val, ok := e.Lookup(n)
+	val, ok := e.Lookup(uint32(i))
 	if !ok {
-		return nil, lisperr.UnboundVariable(n)
+		return nil, lisperr.UnboundVariable(i.String())
 	}
 	return val, nil
 }
@@ -79,13 +95,37 @@ func Name(v types.Value) (string, error) {
 		return "", errors.New("not a symbol")
 	}
 	metricSymbolConversionsToNative.Inc()
-	return string(rv), nil
+	return rv.String(), nil
+}
+
+func Id(v types.Value) (uint32, error) {
+	rv, ok := v.(symbolValue)
+	if !ok {
+		return 0, errors.New("not a symbol")
+	}
+	return uint32(rv), nil
+}
+
+func IdOrPanic(v types.Value) uint32 {
+	rv, err := Id(v)
+	if err != nil {
+		panic(err)
+	}
+	return rv
+}
+
+func StringToIdOrPanic(s string) uint32 {
+	return IdOrPanic(New(s))
 }
 
 func New(s string) types.Value {
 	s = strings.ToLower(s)
 	metricNewSymbol.Inc()
-	return symbolValue(s)
+	n, isNew := symboltable.ToInt(s)
+	if isNew {
+		metricNewSymbolInterned.Inc()
+	}
+	return symbolValue(n)
 }
 
 func Is(v types.Value) bool {

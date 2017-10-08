@@ -12,15 +12,15 @@ import (
 )
 
 type namedValue struct {
-	name string
+	name uint32
 	val  types.Value
 }
 
 type LambdaList struct {
 	rawValue     types.Value
-	requiredArgs []string
+	requiredArgs []uint32
 	optionalArgs []namedValue
-	restArgName  string
+	restArgName  uint32
 }
 
 func (l *LambdaList) minArgs() int {
@@ -28,7 +28,7 @@ func (l *LambdaList) minArgs() int {
 }
 
 func (l *LambdaList) maxArgs() (int, bool) {
-	if l.restArgName != "" {
+	if l.restArgName != 0 {
 		return 0, false
 	}
 	return len(l.requiredArgs) + len(l.optionalArgs), true
@@ -69,7 +69,7 @@ func (l *LambdaList) BindArgs(e types.Env, params []types.Value, pure bool) (typ
 		e.Bind(optArg.name, val)
 	}
 
-	if l.restArgName != "" {
+	if l.restArgName != 0 {
 		e.Bind(l.restArgName, expr.WrapList(params))
 	}
 
@@ -87,18 +87,18 @@ func Parse(val types.Value) (*LambdaList, error) {
 	}
 
 	addRequiredArgument := func(name string) {
-		rv.requiredArgs = append(rv.requiredArgs, name)
+		rv.requiredArgs = append(rv.requiredArgs, symbol.StringToIdOrPanic(name))
 	}
 
 	addOptionalArgument := func(name string, val types.Value) {
 		rv.optionalArgs = append(rv.optionalArgs, namedValue{
-			name: name,
+			name: symbol.StringToIdOrPanic(name),
 			val:  val,
 		})
 	}
 
 	setRestArgument := func(name string) {
-		rv.restArgName = name
+		rv.restArgName = symbol.StringToIdOrPanic(name)
 	}
 
 	inOptionalMode := false

@@ -63,7 +63,7 @@ func Unary(e types.Env, name string, f func(a types.Value) (types.Value, error))
 		}
 		return f(vs[0])
 	}
-	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
+	e.Bind(symbol.StringToIdOrPanic(name), builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, error)) {
@@ -73,7 +73,7 @@ func Binary(e types.Env, name string, f func(a, b types.Value) (types.Value, err
 		}
 		return f(vs[0], vs[1])
 	}
-	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
+	e.Bind(symbol.StringToIdOrPanic(name), builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value, error)) {
@@ -83,11 +83,11 @@ func Ternary(e types.Env, name string, f func(a, b, c types.Value) (types.Value,
 		}
 		return f(vs[0], vs[1], vs[2])
 	}
-	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
+	e.Bind(symbol.StringToIdOrPanic(name), builtinfunc.New(name, purity.NameIsPure(name), wrap(name, checker)))
 }
 
 func Values(e types.Env, name string, f func(xs []types.Value) (types.Value, error)) {
-	e.Bind(name, builtinfunc.New(name, purity.NameIsPure(name), f))
+	e.Bind(symbol.StringToIdOrPanic(name), builtinfunc.New(name, purity.NameIsPure(name), f))
 }
 
 func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s) }
@@ -161,7 +161,7 @@ func (i setSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 		return nil, err
 	}
 
-	e.BindRoot(name, value)
+	e.BindRoot(symbol.StringToIdOrPanic(name), value)
 
 	return value, nil
 }
@@ -216,7 +216,7 @@ func (i defunSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types
 		return nil, err
 	}
 
-	e.BindRoot(name, funcVal)
+	e.BindRoot(symbol.StringToIdOrPanic(name), funcVal)
 	return funcVal, nil
 }
 
@@ -242,7 +242,7 @@ func (i defmacroSpecialForm) Execute(e types.Env, unevaluated []types.Value) (ty
 		return nil, err
 	}
 
-	e.BindRoot(name, macroValue)
+	e.BindRoot(symbol.StringToIdOrPanic(name), macroValue)
 
 	return macroValue, nil
 }
@@ -276,7 +276,7 @@ func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 			return nil, fmt.Errorf("binding %d: wrong length (want 2): %d", i, len(bindingList))
 		}
 
-		sym, err := symbol.Name(bindingList[0])
+		sym, err := symbol.Id(bindingList[0])
 		if err != nil {
 			return nil, fmt.Errorf("binding %d: error getting binding name: %v", i, err)
 		}
@@ -317,7 +317,7 @@ func (i handleExceptionSpecialForm) Execute(e types.Env, unevaluated []types.Val
 		return nil, err
 	}
 
-	errorVarName, err := symbol.Name(errorArgList[0])
+	errorVarName, err := symbol.Id(errorArgList[0])
 	if err != nil {
 		return nil, err
 	}
@@ -438,25 +438,28 @@ func makeFunction(namePtr *string, lexicalEnv types.Env, formalParamSpec types.V
 }
 
 func BindDefaults(e types.Env) {
-	e.Bind("if", &ifSpecialForm{})
-	e.Bind("set!", &setSpecialForm{})
-	e.Bind("defun!", &defunSpecialForm{})
-	e.Bind("defmacro!", &defmacroSpecialForm{})
-	e.Bind("lambda", &lambdaSpecialForm{})
-	e.Bind("quote", &quoteSpecialForm{})
-	e.Bind("quasiquote", &quasiquoteSpecialForm{})
-	e.Bind("let", &letSpecialForm{})
-	e.Bind("and", &andSpecialForm{})
-	e.Bind("or", &orSpecialForm{})
-	e.Bind("handle-exception", &handleExceptionSpecialForm{})
+	bind := func(name string, v types.Value) {
+		e.Bind(symbol.StringToIdOrPanic(name), v)
+	}
+	bind("if", &ifSpecialForm{})
+	bind("set!", &setSpecialForm{})
+	bind("defun!", &defunSpecialForm{})
+	bind("defmacro!", &defmacroSpecialForm{})
+	bind("lambda", &lambdaSpecialForm{})
+	bind("quote", &quoteSpecialForm{})
+	bind("quasiquote", &quasiquoteSpecialForm{})
+	bind("let", &letSpecialForm{})
+	bind("and", &andSpecialForm{})
+	bind("or", &orSpecialForm{})
+	bind("handle-exception", &handleExceptionSpecialForm{})
 
-	e.Bind("nil", null.Nil)
-	e.Bind("true", boolean.True)
-	e.Bind("false", boolean.False)
-	e.Bind("maybe", unknown.MaybeValue)
-	e.Bind("unknown", fullyunknown.Value)
+	bind("nil", null.Nil)
+	bind("true", boolean.True)
+	bind("false", boolean.False)
+	bind("maybe", unknown.MaybeValue)
+	bind("unknown", fullyunknown.Value)
 
-	e.Bind("nan", real.FromFloat64(math.NaN()))
+	bind("nan", real.FromFloat64(math.NaN()))
 
 	Unary(e, "_nan?", func(a types.Value) (types.Value, error) {
 		return boolean.FromBool(real.IsNaN(a)), nil
