@@ -121,13 +121,6 @@
 (defun! _dumb-equals? (a b)
   (_atom-eq? (_to-string a) (_to-string b)))
 
-(defmacro! cond (clause &rest more-clauses)
-  `(if ,(first clause)
-       ,(second clause)
-       ,(if (nil? more-clauses)
-            nil
-            (cons 'cond more-clauses))))
-
 (defun! _maybe? (x)
   (and (= 'any-of (_type x))
        (let ((vs (possible-values x)))

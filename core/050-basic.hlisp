@@ -25,3 +25,10 @@
 
 (defun! progn (&rest body)
   (if (nil? body) nil (last body)))
+
+(defmacro! cond (clause &rest more-clauses)
+  `(if ,(first clause)
+       ,(second clause)
+       ,(if (nil? more-clauses)
+            nil
+            (cons 'cond more-clauses))))
