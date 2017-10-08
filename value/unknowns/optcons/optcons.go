@@ -3,6 +3,7 @@ package optcons
 import (
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/cons"
 )
@@ -13,6 +14,11 @@ type optCons struct {
 	car    types.Value
 	cdr    types.Value
 	mbCons types.Value
+	h      uint32
+}
+
+func (o *optCons) Hashcode() uint32 {
+	return o.h
 }
 
 var _ types.Unknown = &optCons{}
@@ -22,6 +28,7 @@ func New(car, cdr types.Value) types.Value {
 		car:    car,
 		cdr:    cdr,
 		mbCons: cons.New(car, cdr),
+		h:      hashcode.Hash("optcons:", []byte(string(car.Hashcode())), []byte(string(cdr.Hashcode()))),
 	}
 }
 

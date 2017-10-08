@@ -3,8 +3,10 @@ package typed
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/typeset"
 )
@@ -15,6 +17,7 @@ var _ types.Unknown = typedUnknown{}
 
 type typedUnknown struct {
 	ts *typeset.TypeSet
+	h  uint32
 }
 
 func (t typedUnknown) String() string {
@@ -39,11 +42,24 @@ func (t typedUnknown) mayHaveType(name string) bool {
 	return t.ts.Has(name)
 }
 
+func (t typedUnknown) Hashcode() uint32 {
+	return t.h
+}
+
 func Is(v types.Value) bool {
 	_, ok := v.(typedUnknown)
 	return ok
 }
 
 func New(typenames ...string) types.Value {
-	return typedUnknown{typeset.New(typenames...)}
+	ts := typeset.New(typenames...)
+	hasher := hashcode.New()
+	io.WriteString(hasher, "typedunk:")
+	for _, t := range ts.Slice() {
+		hasher.Write([]byte(t))
+	}
+	return typedUnknown{
+		ts: ts,
+		h:  hasher.Sum32(),
+	}
 }

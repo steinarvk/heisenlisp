@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/null"
 )
@@ -34,6 +35,8 @@ var (
 type consValue struct {
 	car types.Value
 	cdr types.Value
+
+	h uint32
 
 	conversionsToList int
 	cachedListForm    []types.Value
@@ -87,6 +90,7 @@ func New(car, cdr types.Value) types.Value {
 	return &consValue{
 		car: car,
 		cdr: cdr,
+		h:   hashcode.Hash("cons:", []byte(string(car.Hashcode())), []byte(string(cdr.Hashcode()))),
 	}
 }
 
@@ -113,6 +117,10 @@ func Cdr(v types.Value) (types.Value, error) {
 		return nil, notACons
 	}
 	return rv.cdr, nil
+}
+
+func (c *consValue) Hashcode() uint32 {
+	return c.h
 }
 
 func (c *consValue) Eval(e types.Env) (types.Value, error) {

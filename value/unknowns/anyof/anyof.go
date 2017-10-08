@@ -3,10 +3,12 @@ package anyof
 import (
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
 	"github.com/steinarvk/heisenlisp/dedupe"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/boolean"
 	"github.com/steinarvk/heisenlisp/value/unknowns/fullyunknown"
@@ -24,11 +26,16 @@ var (
 type anyOf struct {
 	vals  []types.Value
 	types []string
+	h     uint32
 }
 
 var MaybeValue = anyOf{
 	vals:  []types.Value{boolean.True, boolean.False},
 	types: []string{boolean.TypeName},
+}
+
+func (a anyOf) Hashcode() uint32 {
+	return a.h
 }
 
 func (a anyOf) isMaybe() bool {
@@ -80,11 +87,15 @@ func newRaw(xs []types.Value) types.Value {
 
 	deduper := dedupe.New()
 
+	hasher := hashcode.New()
+	io.WriteString(hasher, "anyof:")
+
 	tps := map[string]struct{}{}
 
 	addIfNew := func(singleValue types.Value) {
 		if deduper.Add(singleValue) {
 			tps[singleValue.TypeName()] = struct{}{}
+			hasher.Write([]byte(string(singleValue.Hashcode())))
 		}
 	}
 
@@ -107,6 +118,7 @@ func newRaw(xs []types.Value) types.Value {
 
 	rv.vals = deduper.Slice()
 	rv.types = typesSlice
+	rv.h = hasher.Sum32()
 
 	return rv
 }

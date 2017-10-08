@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/interntable"
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/types"
@@ -131,4 +132,8 @@ func New(s string) types.Value {
 func Is(v types.Value) bool {
 	_, ok := v.(symbolValue)
 	return ok
+}
+
+func (s symbolValue) Hashcode() uint32 {
+	return hashcode.Hash("sym:", []byte(string(s)))
 }

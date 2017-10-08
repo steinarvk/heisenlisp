@@ -1,6 +1,9 @@
 package fullyunknown
 
-import "github.com/steinarvk/heisenlisp/types"
+import (
+	"github.com/steinarvk/heisenlisp/hashcode"
+	"github.com/steinarvk/heisenlisp/types"
+)
 
 const TypeName = "unknown"
 
@@ -25,3 +28,7 @@ func Is(v types.Value) bool {
 	_, ok := v.(fullyUnknown)
 	return ok
 }
+
+var unkHash = hashcode.Hash("fullyunknown:fullyunknown")
+
+func (f fullyUnknown) Hashcode() uint32 { return unkHash }

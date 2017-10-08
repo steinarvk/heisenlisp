@@ -3,6 +3,7 @@ package numinrange
 import (
 	"fmt"
 
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/numrange"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/typeset"
@@ -19,6 +20,7 @@ var defaultTypeset = typeset.New(real.TypeName, integer.TypeName)
 type numinrangeValue struct {
 	ts *typeset.TypeSet
 	r  *numrange.Range
+	h  uint32
 }
 
 func New(low, high types.Numeric, lowIncl, highIncl bool, typenames []string) (types.Value, error) {
@@ -34,7 +36,12 @@ func New(low, high types.Numeric, lowIncl, highIncl bool, typenames []string) (t
 	return &numinrangeValue{
 		r:  r,
 		ts: ts,
+		h:  hashcode.Hash("numinrange:", []byte(r.String())),
 	}, nil
+}
+
+func (n *numinrangeValue) Hashcode() uint32 {
+	return n.h
 }
 
 func (n *numinrangeValue) String() string {

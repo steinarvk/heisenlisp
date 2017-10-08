@@ -3,6 +3,7 @@ package boolean
 import (
 	"errors"
 
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -15,6 +16,11 @@ type boolValue bool
 var (
 	True  = boolValue(true)
 	False = boolValue(false)
+)
+
+var (
+	trueHash  = hashcode.Hash("bool:true")
+	falseHash = hashcode.Hash("bool:false")
 )
 
 var (
@@ -53,4 +59,11 @@ func ToBool(v types.Value) (bool, error) {
 		return false, notABool
 	}
 	return bool(bv), nil
+}
+
+func (b boolValue) Hashcode() uint32 {
+	if bool(b) {
+		return trueHash
+	}
+	return falseHash
 }

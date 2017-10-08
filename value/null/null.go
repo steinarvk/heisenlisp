@@ -1,10 +1,15 @@
 package null
 
-import "github.com/steinarvk/heisenlisp/types"
+import (
+	"github.com/steinarvk/heisenlisp/hashcode"
+	"github.com/steinarvk/heisenlisp/types"
+)
 
 const TypeName = "nil"
 
 type nilValue struct{}
+
+var nilHash = hashcode.Hash("null:nil")
 
 func IsNil(v types.Value) bool {
 	_, ok := v.(nilValue)
@@ -23,3 +28,5 @@ func (v nilValue) AtomEquals(other types.Atom) bool {
 	return ok
 }
 func (_ nilValue) TypeName() string { return TypeName }
+
+func (_ nilValue) Hashcode() uint32 { return nilHash }

@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -48,4 +49,13 @@ func IsNaN(v types.Value) bool {
 		return false
 	}
 	return math.IsNaN(float64(uv))
+}
+
+func (v realValue) NumericRepresentationHashcode() uint32 {
+	return hashcode.Hash("float64:", []byte(v.String()))
+}
+
+func (v realValue) Hashcode() uint32 {
+	// TODO: reduce to least number representation
+	return v.NumericRepresentationHashcode()
 }

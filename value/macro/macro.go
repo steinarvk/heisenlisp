@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/lambdalist"
 	"github.com/steinarvk/heisenlisp/macroexpand"
 	"github.com/steinarvk/heisenlisp/purity"
@@ -107,4 +108,8 @@ func (f *macroValue) errorprefix() string {
 		return "(anonymous macro): "
 	}
 	return fmt.Sprintf("%s: ", f.name)
+}
+
+func (f *macroValue) Hashcode() uint32 {
+	return hashcode.Hash(fmt.Sprintf("%p", f))
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -74,4 +75,8 @@ func ToString(v types.Value) (string, error) {
 func New(s string) types.Value {
 	metricNewString.Inc()
 	return stringValue(s)
+}
+
+func (s stringValue) Hashcode() uint32 {
+	return hashcode.Hash("str:", []byte(s))
 }

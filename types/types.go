@@ -13,6 +13,7 @@ const (
 
 type Value interface {
 	String() string
+	Hashcode() uint32
 	Falsey() bool
 	TypeName() string
 	Eval(e Env) (Value, error)
@@ -57,6 +58,7 @@ type Env interface {
 
 type Numeric interface {
 	Value
+	NumericRepresentationHashcode() uint32
 	AsInt64() (int64, bool)
 	AsBigint() (*big.Int, bool)
 	AsBigrat() (*big.Rat, bool)

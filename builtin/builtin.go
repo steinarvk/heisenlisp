@@ -15,6 +15,7 @@ import (
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/heisenlisp/equality"
 	"github.com/steinarvk/heisenlisp/expr"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/listops"
 	"github.com/steinarvk/heisenlisp/logic"
@@ -95,6 +96,7 @@ func specialFormString(s string) string { return fmt.Sprintf("#<special %q>", s)
 type ifSpecialForm struct{}
 
 func (i ifSpecialForm) IsPure() bool                        { return true }
+func (i ifSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i ifSpecialForm) TypeName() string                    { return "special" }
 func (i ifSpecialForm) String() string                      { return specialFormString("if") }
 func (i ifSpecialForm) Falsey() bool                        { return false }
@@ -143,6 +145,7 @@ type setSpecialForm struct{}
 
 func (i setSpecialForm) TypeName() string                    { return "special" }
 func (i setSpecialForm) IsPure() bool                        { return false }
+func (i setSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i setSpecialForm) String() string                      { return specialFormString("set!") }
 func (i setSpecialForm) Falsey() bool                        { return false }
 func (i setSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -170,6 +173,7 @@ type quoteSpecialForm struct{}
 
 func (i quoteSpecialForm) TypeName() string                    { return "special" }
 func (i quoteSpecialForm) IsPure() bool                        { return true }
+func (i quoteSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i quoteSpecialForm) String() string                      { return specialFormString("quote") }
 func (i quoteSpecialForm) Falsey() bool                        { return false }
 func (i quoteSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -184,6 +188,7 @@ type quasiquoteSpecialForm struct{}
 
 func (i quasiquoteSpecialForm) TypeName() string                    { return "special" }
 func (i quasiquoteSpecialForm) IsPure() bool                        { return true }
+func (i quasiquoteSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i quasiquoteSpecialForm) String() string                      { return specialFormString("quasiquote") }
 func (i quasiquoteSpecialForm) Falsey() bool                        { return false }
 func (i quasiquoteSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -198,6 +203,7 @@ type defunSpecialForm struct{}
 
 func (i defunSpecialForm) TypeName() string                    { return "special" }
 func (i defunSpecialForm) IsPure() bool                        { return false }
+func (i defunSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i defunSpecialForm) String() string                      { return specialFormString("defun!") }
 func (i defunSpecialForm) Falsey() bool                        { return false }
 func (i defunSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -224,6 +230,7 @@ type defmacroSpecialForm struct{}
 
 func (i defmacroSpecialForm) TypeName() string                    { return "special" }
 func (i defmacroSpecialForm) IsPure() bool                        { return false }
+func (i defmacroSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i defmacroSpecialForm) String() string                      { return specialFormString("defmacro!") }
 func (i defmacroSpecialForm) Falsey() bool                        { return false }
 func (i defmacroSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -251,6 +258,7 @@ type letSpecialForm struct{}
 
 func (i letSpecialForm) TypeName() string                    { return "special" }
 func (i letSpecialForm) IsPure() bool                        { return true }
+func (i letSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i letSpecialForm) String() string                      { return specialFormString("let") }
 func (i letSpecialForm) Falsey() bool                        { return false }
 func (i letSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -294,8 +302,11 @@ func (i letSpecialForm) Execute(e types.Env, unevaluated []types.Value) (types.V
 
 type handleExceptionSpecialForm struct{}
 
-func (i handleExceptionSpecialForm) TypeName() string                    { return "special" }
-func (i handleExceptionSpecialForm) IsPure() bool                        { return true }
+func (i handleExceptionSpecialForm) TypeName() string { return "special" }
+func (i handleExceptionSpecialForm) IsPure() bool     { return true }
+func (i handleExceptionSpecialForm) Hashcode() uint32 {
+	return hashcode.Hash("special:", []byte(i.String()))
+}
 func (i handleExceptionSpecialForm) String() string                      { return specialFormString("handle-exception") }
 func (i handleExceptionSpecialForm) Falsey() bool                        { return false }
 func (i handleExceptionSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -340,6 +351,7 @@ type andSpecialForm struct{}
 
 func (i andSpecialForm) TypeName() string                    { return "special" }
 func (i andSpecialForm) IsPure() bool                        { return true }
+func (i andSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i andSpecialForm) String() string                      { return specialFormString("and") }
 func (i andSpecialForm) Falsey() bool                        { return false }
 func (i andSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -376,6 +388,7 @@ type orSpecialForm struct{}
 
 func (i orSpecialForm) TypeName() string                    { return "special" }
 func (i orSpecialForm) IsPure() bool                        { return true }
+func (i orSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i orSpecialForm) String() string                      { return specialFormString("or") }
 func (i orSpecialForm) Falsey() bool                        { return false }
 func (i orSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }
@@ -412,6 +425,7 @@ type lambdaSpecialForm struct{}
 
 func (i lambdaSpecialForm) TypeName() string                    { return "special" }
 func (i lambdaSpecialForm) IsPure() bool                        { return true }
+func (i lambdaSpecialForm) Hashcode() uint32                    { return hashcode.Hash("special:", []byte(i.String())) }
 func (i lambdaSpecialForm) String() string                      { return specialFormString("lambda") }
 func (i lambdaSpecialForm) Falsey() bool                        { return false }
 func (i lambdaSpecialForm) Eval(types.Env) (types.Value, error) { return i, nil }

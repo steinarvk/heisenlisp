@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/lambdalist"
 	"github.com/steinarvk/heisenlisp/macroexpand"
 	"github.com/steinarvk/heisenlisp/purity"
@@ -107,3 +108,7 @@ func (f *functionValue) IsPure() bool {
 }
 
 func (f *functionValue) Falsey() bool { return false }
+
+func (f *functionValue) Hashcode() uint32 {
+	return hashcode.Hash(fmt.Sprintf("%p", f))
+}

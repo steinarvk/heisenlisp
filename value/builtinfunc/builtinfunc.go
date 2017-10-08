@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/types"
 )
 
@@ -59,3 +60,7 @@ func (f *builtinFunctionValue) String() string {
 func (f *builtinFunctionValue) Eval(_ types.Env) (types.Value, error) { return f, nil }
 
 func (f *builtinFunctionValue) Falsey() bool { return false }
+
+func (f *builtinFunctionValue) Hashcode() uint32 {
+	return hashcode.Hash(fmt.Sprintf("%p", f))
+}
