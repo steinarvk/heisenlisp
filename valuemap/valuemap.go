@@ -22,11 +22,13 @@ type entry struct {
 }
 
 type Map struct {
-	entries []entry
+	m map[uint32][]entry
 }
 
 func New() *Map {
-	return &Map{}
+	return &Map{
+		m: map[uint32][]entry{},
+	}
 }
 
 func mustEqual(a, b types.Value) bool {
@@ -46,18 +48,23 @@ func mayEqual(a, b types.Value) bool {
 }
 
 func (m *Map) getPreviousAndMaybeSet(k types.Value, v interface{}) (interface{}, bool) {
-	// linear search
-	for _, entry := range m.entries {
-		if mustEqual(entry.key, k) {
-			oldVal := entry.value
-			if v != nil {
-				entry.value = v
+	hc := k.Hashcode()
+	if entries, present := m.m[hc]; present {
+		// linear search
+		for _, entry := range entries {
+			if mustEqual(entry.key, k) {
+				oldVal := entry.value
+				if v != nil {
+					entry.value = v
+				}
+				return oldVal, true
 			}
-			return oldVal, true
 		}
-	}
-	if v != nil {
-		m.entries = append(m.entries, entry{k, v})
+		if v != nil {
+			m.m[hc] = append(entries, entry{k, v})
+		}
+	} else {
+		m.m[hc] = []entry{{k, v}}
 	}
 	return nil, false
 }
@@ -72,11 +79,14 @@ func (m *Map) GetMust(k types.Value, v interface{}) (interface{}, bool) {
 }
 
 func (m *Map) LookupMaybe(k types.Value, f func(types.Value, interface{}) bool) {
-	for _, entry := range m.entries {
-		if mayEqual(entry.key, k) {
-			shortCircuit := f(entry.key, entry.value)
-			if shortCircuit {
-				return
+	// todo: this could be optimised lots.
+	for _, entries := range m.m {
+		for _, entry := range entries {
+			if mayEqual(entry.key, k) {
+				shortCircuit := f(entry.key, entry.value)
+				if shortCircuit {
+					return
+				}
 			}
 		}
 	}
