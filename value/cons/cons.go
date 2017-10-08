@@ -160,13 +160,14 @@ func (c *consValue) Eval(e types.Env) (types.Value, error) {
 		return nil, errors.New("impure call in pure context")
 	}
 
-	var params []types.Value
-	for _, unevaled := range unevaluatedParams {
+	n := len(unevaluatedParams)
+	params := make([]types.Value, n, n)
+	for i, unevaled := range unevaluatedParams {
 		evaled, err := unevaled.Eval(e)
 		if err != nil {
 			return nil, err
 		}
-		params = append(params, evaled)
+		params[i] = evaled
 	}
 
 	return callable.Call(params)
