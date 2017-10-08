@@ -45,7 +45,11 @@ func macroexpandNonmacroCons(e types.Env, consval types.Value) (types.Value, err
 		return nil, err
 	}
 
-	return cons.New(carExpanded, cdrExpanded), nil
+	result := cons.New(carExpanded, cdrExpanded)
+
+	cons.MarkAsMacroexpanded(result)
+
+	return result, nil
 }
 
 func MacroexpandMultiple(e types.Env, vs []types.Value) ([]types.Value, error) {
@@ -61,6 +65,10 @@ func MacroexpandMultiple(e types.Env, vs []types.Value) ([]types.Value, error) {
 }
 
 func Macroexpand(e types.Env, v types.Value) (types.Value, error) {
+	if cons.IsMarkedAsMacroexpanded(v) {
+		return v, nil
+	}
+
 	car, cdr, ok := cons.Decompose(v)
 	if !ok {
 		return v, nil
@@ -94,5 +102,11 @@ func Macroexpand(e types.Env, v types.Value) (types.Value, error) {
 		return nil, err
 	}
 
-	return Macroexpand(e, result)
+	finalResult, err := Macroexpand(e, result)
+	if err != nil {
+		return nil, err
+	}
+
+	cons.MarkAsMacroexpanded(finalResult)
+	return finalResult, nil
 }

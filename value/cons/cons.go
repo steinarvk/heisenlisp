@@ -40,6 +40,30 @@ type consValue struct {
 
 	conversionsToList int
 	cachedListForm    []types.Value
+
+	// does _not_ count for equality.
+	// purely an optimization.
+	markedAsMacroexpanded bool
+}
+
+func MarkAsMacroexpanded(v types.Value) bool {
+	c, ok := v.(*consValue)
+	if !ok {
+		return false
+	}
+	if c.markedAsMacroexpanded {
+		return false
+	}
+	c.markedAsMacroexpanded = true
+	return true
+}
+
+func IsMarkedAsMacroexpanded(v types.Value) bool {
+	c, ok := v.(*consValue)
+	if !ok {
+		return false
+	}
+	return c.markedAsMacroexpanded
 }
 
 func (_ *consValue) TypeName() string { return TypeName }
