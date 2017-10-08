@@ -1,12 +1,27 @@
 package macroexpand
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/cons"
 	"github.com/steinarvk/heisenlisp/value/null"
 	"github.com/steinarvk/heisenlisp/value/symbol"
 )
+
+var (
+	metricNontrivialMacroexpands = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "hlisp",
+			Name:      "nontrivial_macroexpands",
+			Help:      "Nontrivial calls to macroexpand",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(metricNontrivialMacroexpands)
+}
 
 func symbolIsSpecial(name string) bool {
 	return name == "quote" || name == "quasiquote"
@@ -73,6 +88,8 @@ func Macroexpand(e types.Env, v types.Value) (types.Value, error) {
 	if !ok {
 		return v, nil
 	}
+
+	metricNontrivialMacroexpands.Inc()
 
 	if !symbol.Is(car) {
 		return macroexpandNonmacroCons(e, v)

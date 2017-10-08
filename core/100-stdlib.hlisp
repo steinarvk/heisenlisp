@@ -64,21 +64,35 @@
   (defun! append (&rest lists)
     (fold-right append-two nil lists)))
 
-(letfunc* ((must-be-smaller (x y) (must? (< x y)))
-           (might-be-larger (x y) (may (must-be-smaller x y)))
-           (must-be-smaller-than (z)
-             (lambda (x) (must-be-smaller x z)))
-           (might-be-larger-than (z)
-             (lambda (x) (might-be-larger x z))))
+(defun! partition-ternary (f xs negative-acc zero-acc positive-acc)
+  (if (nil? xs)
+      (list negative-acc zero-acc positive-acc)
+      (let* ((item (car xs))
+             (result (f item)))
+        (cond
+          ((must? (> result 0))
+           (partition-ternary f (cdr xs) negative-acc zero-acc (cons item positive-acc)))
+          ((must? (< result 0))
+           (partition-ternary f (cdr xs) (cons item negative-acc) zero-acc positive-acc))
+          (true
+           (partition-ternary f (cdr xs) negative-acc (cons item zero-acc) positive-acc))))))
+
+(letfunc* ((categoriser (pivot)
+             (lambda (x)
+               (cond
+                 ((must? (> x pivot)) 1)
+                 ((must? (< x pivot)) -1)
+                 (true 0)))))
   (defun! sorted (xs)
     (cond
       ((nil? xs) nil)
       ((nil? (cdr xs)) xs)
       (true
         (let* ((pivot (car xs))
-               (smaller (filter (lambda (x) (must? (< x pivot))) (cdr xs)))
-               (same (filter (lambda (x) (not (or (must? (< x pivot)) (must? (> x pivot))))) (cdr xs)))
-               (larger (filter (lambda (x) (must? (> x pivot))) (cdr xs))))
+               (lists (partition-ternary (categoriser pivot) (cdr xs) nil nil nil))
+               (smaller (first lists))
+               (same (second lists))
+               (larger (third lists)))
           (append (sorted smaller) (list* pivot same) (sorted larger)))))))
 
 (defun! to-floating-point (x) (+ 0.0 x))
