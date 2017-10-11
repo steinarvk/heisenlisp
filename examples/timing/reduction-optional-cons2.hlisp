@@ -1,0 +1,2 @@
+(defun! timing-testcase (n)
+  (fold-left (lambda (x y) (mod (* x y) 10)) 1 (filter (lambda (x) maybe) (range n))))

@@ -324,6 +324,9 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(= (list) (sorted nil))`,
 		`(= (list 1) (sorted (list 1)))`,
 		`(= (list 1 2 3) (append nil (list 1 2 3)))`,
+		`(let ((result (fold-left (lambda (x y) (if (> (* x y) 10) 10 (* x y))) 1 (filter (lambda (x) maybe) (list 2 3 6 7 8 9 10 11 12 13 14)))))
+		   (and (_maybe? (= 2 result))
+			      (not (= 5 result))))`,
 	}
 
 	for i, s := range exprs {
@@ -674,9 +677,51 @@ func BenchmarkSortList50(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := code.Run(root, "<turing benchmark code>", sortCode)
+		_, err := code.Run(root, "<sort benchmark code>", sortCode)
 		if err != nil {
 			b.Fatalf("evaluating benchmark code %q failed: %v", sortCode, err)
+		}
+	}
+}
+
+func BenchmarkNormalConsFoldLeft500(b *testing.B) {
+	root := builtin.NewRootEnv()
+
+	ocflCode := []byte("(fold-left (lambda (x y) (mod (* x y) 10)) 1 (range 500))")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<normalcons-fold-left benchmark code>", ocflCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", ocflCode, err)
+		}
+	}
+}
+
+func BenchmarkNormalConsFoldRight500(b *testing.B) {
+	root := builtin.NewRootEnv()
+
+	ocflCode := []byte("(fold-right (lambda (x y) (mod (* x y) 10)) 1 (range 500))")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<normalcons-fold-right benchmark code>", ocflCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", ocflCode, err)
+		}
+	}
+}
+
+func BenchmarkOptConsFoldLeft50(b *testing.B) {
+	root := builtin.NewRootEnv()
+
+	ocflCode := []byte("(fold-left (lambda (x y) (mod (* x y) 10)) 1 (filter (lambda (x) maybe) (range 50)))")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<optcons-fold-left benchmark code>", ocflCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", ocflCode, err)
 		}
 	}
 }
