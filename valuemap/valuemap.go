@@ -63,7 +63,7 @@ func (m *Map) getPreviousAndMaybeSet(k types.Value, v interface{}) (interface{},
 		if v != nil {
 			m.m[hc] = append(entries, entry{k, v})
 		}
-	} else {
+	} else if v != nil {
 		m.m[hc] = []entry{{k, v}}
 	}
 	return nil, false
@@ -74,12 +74,13 @@ func (m *Map) SetAndGetPrevious(k types.Value, v interface{}) (interface{}, bool
 	return m.getPreviousAndMaybeSet(k, v)
 }
 
-func (m *Map) GetMust(k types.Value, v interface{}) (interface{}, bool) {
+func (m *Map) GetMust(k types.Value) (interface{}, bool) {
 	return m.getPreviousAndMaybeSet(k, nil)
 }
 
 func (m *Map) LookupMaybe(k types.Value, f func(types.Value, interface{}) bool) {
 	// todo: this could be optimised lots.
+	// no actual application for this yet so it's not a huge priority.
 	for _, entries := range m.m {
 		for _, entry := range entries {
 			if mayEqual(entry.key, k) {

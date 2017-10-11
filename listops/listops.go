@@ -10,6 +10,7 @@ import (
 	"github.com/steinarvk/heisenlisp/value/null"
 	"github.com/steinarvk/heisenlisp/value/unknowns/anyof"
 	"github.com/steinarvk/heisenlisp/value/unknowns/optcons"
+	"github.com/steinarvk/heisenlisp/valuemap"
 )
 
 // how to stop exponential explosion here?
@@ -41,40 +42,72 @@ func FoldLeftShortcircuit(f func(a, b types.Value) (types.Value, bool, error), i
 }
 
 func FoldLeftShortcircuitWithOddTail(f func(a, b types.Value) (types.Value, bool, error), handleOddTail func(a, b types.Value) (types.Value, error), initial types.Value, consish types.Value) (types.Value, error) {
-	if null.IsNil(consish) {
-		return initial, nil
+	var flswot func(initial, consish types.Value) (types.Value, error)
+
+	calculate := func(initial types.Value, consish types.Value) (types.Value, error) {
+		if null.IsNil(consish) {
+			return initial, nil
+		}
+
+		car, cdr, ok := cons.Decompose(consish)
+		if ok {
+			val, shortcircuit, err := f(initial, car)
+			if err != nil {
+				return nil, err
+			}
+			if shortcircuit {
+				return val, nil
+			}
+			return flswot(val, cdr)
+		}
+
+		if !anyof.Is(consish) && !optcons.Is(consish) {
+			return handleOddTail(initial, consish)
+		}
+
+		conses, _ := anyof.PossibleValues(consish)
+
+		var rv []types.Value
+
+		for _, subconsish := range conses {
+			// exploding! TODO
+			val, err := flswot(initial, subconsish)
+			if err != nil {
+				return nil, err
+			}
+			rv = append(rv, val)
+		}
+
+		return anyof.New(rv)
 	}
 
-	car, cdr, ok := cons.Decompose(consish)
-	if ok {
-		val, shortcircuit, err := f(initial, car)
+	vm := valuemap.New()
+
+	flswot = func(initial, consish types.Value) (types.Value, error) {
+		// pointer map! not a valuemap
+		var memoMap map[types.Value]types.Value
+
+		memo, ok := vm.GetMust(initial)
+		if !ok {
+			memoMap = map[types.Value]types.Value{}
+			vm.SetAndGetPrevious(initial, memoMap)
+		} else {
+			memoMap = memo.(map[types.Value]types.Value)
+		}
+
+		rv, ok := memoMap[consish]
+		if ok {
+			return rv, nil
+		}
+		calculated, err := calculate(initial, consish)
 		if err != nil {
 			return nil, err
 		}
-		if shortcircuit {
-			return val, nil
-		}
-		return FoldLeftShortcircuitWithOddTail(f, handleOddTail, val, cdr)
+		memoMap[consish] = calculated
+		return calculated, nil
 	}
 
-	if !anyof.Is(consish) && !optcons.Is(consish) {
-		return handleOddTail(initial, consish)
-	}
-
-	conses, _ := anyof.PossibleValues(consish)
-
-	var rv []types.Value
-
-	for _, subconsish := range conses {
-		// exploding! TODO
-		val, err := FoldLeftShortcircuitWithOddTail(f, handleOddTail, initial, subconsish)
-		if err != nil {
-			return nil, err
-		}
-		rv = append(rv, val)
-	}
-
-	return anyof.New(rv)
+	return flswot(initial, consish)
 }
 
 var (
