@@ -17,7 +17,7 @@ import (
 
 const TypeName = "any-of"
 
-var _ types.Unknown = anyOf{}
+var _ types.Unknown = &anyOf{}
 
 var (
 	MaxAnyOfElements = int64(100)
@@ -29,16 +29,16 @@ type anyOf struct {
 	h     uint32
 }
 
-var MaybeValue = anyOf{
+var MaybeValue = &anyOf{
 	vals:  []types.Value{boolean.True, boolean.False},
 	types: []string{boolean.TypeName},
 }
 
-func (a anyOf) Hashcode() uint32 {
+func (a *anyOf) Hashcode() uint32 {
 	return a.h
 }
 
-func (a anyOf) isMaybe() bool {
+func (a *anyOf) isMaybe() bool {
 	if len(a.vals) != 2 {
 		return false
 	}
@@ -56,7 +56,7 @@ func (a anyOf) isMaybe() bool {
 	return val1 == false && val2 == true
 }
 
-func (a anyOf) String() string {
+func (a *anyOf) String() string {
 	if a.isMaybe() {
 		return "maybe"
 	}
@@ -68,22 +68,22 @@ func (a anyOf) String() string {
 	return fmt.Sprintf("#any-of(%s)", strings.Join(xs, " "))
 }
 
-func (a anyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
-func (a anyOf) Falsey() bool                          { return false }
-func (_ anyOf) TypeName() string                      { return TypeName }
+func (a *anyOf) Eval(_ types.Env) (types.Value, error) { return a, nil }
+func (a *anyOf) Falsey() bool                          { return false }
+func (_ *anyOf) TypeName() string                      { return TypeName }
 
-func (_ anyOf) HasNontypeInfo() bool { return true }
+func (_ *anyOf) HasNontypeInfo() bool { return true }
 
-func (a anyOf) ActualTypeName() ([]string, bool) {
+func (a *anyOf) ActualTypeName() ([]string, bool) {
 	return a.types, true
 }
 
-func (a anyOf) possibleValues() []types.Value {
+func (a *anyOf) possibleValues() []types.Value {
 	return a.vals
 }
 
 func newRaw(xs []types.Value) types.Value {
-	rv := anyOf{}
+	rv := &anyOf{}
 
 	deduper := dedupe.New()
 
@@ -146,7 +146,7 @@ func New(xs []types.Value) (types.Value, error) {
 		return xs[0], nil
 	}
 
-	rv := newRaw(xs).(anyOf)
+	rv := newRaw(xs).(*anyOf)
 
 	vals := rv.possibleValues()
 
@@ -176,7 +176,7 @@ func PossibleValues(v types.Value) ([]types.Value, bool) {
 		return []types.Value{v1, v2}, true
 	}
 
-	a, ok := v.(anyOf)
+	a, ok := v.(*anyOf)
 	if !ok {
 		return nil, false
 	}
@@ -185,12 +185,12 @@ func PossibleValues(v types.Value) ([]types.Value, bool) {
 }
 
 func Is(v types.Value) bool {
-	_, ok := v.(anyOf)
+	_, ok := v.(*anyOf)
 	return ok
 }
 
 func IsMaybe(v types.Value) bool {
-	rv, ok := v.(anyOf)
+	rv, ok := v.(*anyOf)
 	if !ok {
 		return false
 	}
