@@ -1,7 +1,6 @@
 package intersection
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/steinarvk/heisenlisp/cyclebreaker"
@@ -35,7 +34,7 @@ func stringSlicesIntersect(xs, ys []string) bool {
 }
 
 func unknownCanHaveValue(a types.Unknown, val types.Value) (bool, error) {
-	// Can exclude on the right side: any form of unknown.
+	// Can exclude on the right side: intrinsically unknown (not cons with unknown parts)
 
 	valType := val.TypeName()
 
@@ -62,7 +61,9 @@ func unknownCanHaveValue(a types.Unknown, val types.Value) (bool, error) {
 			case types.True:
 				return true, nil
 			case types.Maybe:
-				return false, errors.New("impossible: unexpected uncertainty")
+				// Used to think this was impossible, but doesn't it always mean that there may be an intersection?
+				return true, nil
+				// return false, fmt.Errorf("impossible: unexpected uncertainty ascertaining whether %v can have value %v", a, val)
 			}
 		}
 

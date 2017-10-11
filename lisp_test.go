@@ -327,6 +327,9 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(let ((result (fold-left (lambda (x y) (if (> (* x y) 10) 10 (* x y))) 1 (filter (lambda (x) maybe) (list 2 3 6 7 8 9 10 11 12 13 14)))))
 		   (and (_maybe? (= 2 result))
 			      (not (= 5 result))))`,
+		`(let ((result (fold-left (lambda (x y) (if (> (* x y) 10) 10 (* x y))) 1 (filter (lambda (x) maybe) (list 2 2 3 6 7 8 9 10 11 12 13 14)))))
+		   (and (_maybe? (= 2 result))
+			      (not (= 5 result))))`,
 	}
 
 	for i, s := range exprs {
