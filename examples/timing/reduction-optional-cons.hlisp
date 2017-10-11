@@ -1,0 +1,8 @@
+(defun! always-maybe (x) maybe)
+
+(defun! count-element (old-count x) (inc old-count))
+
+(defun! timing-testcase (n)
+  (let* ((xs (range n))
+         (xs-maybes (filter always-maybe xs)))
+    (fold-left count-element 0 xs-maybes)))
