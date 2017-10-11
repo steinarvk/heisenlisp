@@ -37,6 +37,10 @@ func failOnOddTail(_, consish types.Value) (types.Value, error) {
 	return nil, lisperr.UnexpectedValue{"cons or enumerable", consish}
 }
 
+func FoldRight(f func(a, b types.Value) (types.Value, error), initial types.Value, consish types.Value) (types.Value, error) {
+	return FoldRightWithOddTail(f, failOnOddTail, initial, consish)
+}
+
 func FoldLeftShortcircuit(f func(a, b types.Value) (types.Value, bool, error), initial types.Value, consish types.Value) (types.Value, error) {
 	return FoldLeftShortcircuitWithOddTail(f, failOnOddTail, initial, consish)
 }
@@ -108,6 +112,67 @@ func FoldLeftShortcircuitWithOddTail(f func(a, b types.Value) (types.Value, bool
 	}
 
 	return flswot(initial, consish)
+}
+
+func FoldRightWithOddTail(f func(a, b types.Value) (types.Value, error), handleOddTail func(a, b types.Value) (types.Value, error), initial types.Value, consish types.Value) (types.Value, error) {
+	var frswot func(consish types.Value) (types.Value, error)
+
+	calculate := func(consish types.Value) (types.Value, error) {
+		if null.IsNil(consish) {
+			return initial, nil
+		}
+
+		car, cdr, ok := cons.Decompose(consish)
+		if ok {
+			result, err := frswot(cdr)
+			if err != nil {
+				return nil, err
+			}
+
+			val, err := f(car, result)
+			if err != nil {
+				return nil, err
+			}
+			return val, nil
+		}
+
+		if !anyof.Is(consish) && !optcons.Is(consish) {
+			return handleOddTail(initial, consish)
+		}
+
+		conses, _ := anyof.PossibleValues(consish)
+
+		var rv []types.Value
+
+		for _, subconsish := range conses {
+			val, err := frswot(subconsish)
+			if err != nil {
+				return nil, err
+			}
+			rv = append(rv, val)
+		}
+
+		return anyof.New(rv)
+	}
+
+	memoMap := map[types.Value]types.Value{}
+
+	frswot = func(consish types.Value) (types.Value, error) {
+		// pointer map! not a valuemap
+		rv, ok := memoMap[consish]
+		if ok {
+			return rv, nil
+		}
+
+		calculated, err := calculate(consish)
+		if err != nil {
+			return nil, err
+		}
+		memoMap[consish] = calculated
+		return calculated, nil
+	}
+
+	return frswot(consish)
 }
 
 var (

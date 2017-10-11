@@ -7,13 +7,6 @@
       (/ 1 numerator)
       (low-level-divide numerator (apply * denominators))))
 
-;; TODO: may need to become a builtin to deal with
-;;       uncertainty efficiently.
-(defun! fold-right (f initial xs)
-  (if (nil? xs)
-      initial
-      (f (car xs) (fold-right f initial (cdr xs)))))
-
 (defun! list* (arg &rest args)
   (when (uncertain? (length args))
     (throw-exception "list* does not handle unknown-length lists"))

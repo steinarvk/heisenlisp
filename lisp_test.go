@@ -330,6 +330,8 @@ func TestExpressionsTruthy(t *testing.T) {
 		`(let ((result (fold-left (lambda (x y) (if (> (* x y) 10) 10 (* x y))) 1 (filter (lambda (x) maybe) (list 2 2 3 6 7 8 9 10 11 12 13 14)))))
 		   (and (_maybe? (= 2 result))
 			      (not (= 5 result))))`,
+		`(= "(0 (1 (2 (3 (4 nil)))))" (_to-string (fold-right list nil (range 5))))`,
+		`(= "(((((nil 0) 1) 2) 3) 4)" (_to-string (fold-left list nil (range 5))))`,
 	}
 
 	for i, s := range exprs {
@@ -723,6 +725,20 @@ func BenchmarkOptConsFoldLeft50(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := code.Run(root, "<optcons-fold-left benchmark code>", ocflCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", ocflCode, err)
+		}
+	}
+}
+
+func BenchmarkOptConsFoldRight50(b *testing.B) {
+	root := builtin.NewRootEnv()
+
+	ocflCode := []byte("(fold-right (lambda (x y) (mod (* x y) 10)) 1 (filter (lambda (x) maybe) (range 50)))")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<optcons-fold-right benchmark code>", ocflCode)
 		if err != nil {
 			b.Fatalf("evaluating benchmark code %q failed: %v", ocflCode, err)
 		}

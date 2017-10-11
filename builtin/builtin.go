@@ -771,6 +771,21 @@ func BindDefaults(e types.Env) {
 		return listops.FilterReversed(cb, l)
 	})
 
+	Ternary(e, "fold-right", func(f, initial, l types.Value) (types.Value, error) {
+		// folding is like reduction, except the initial value is always used.
+
+		callable, ok := f.(types.Callable)
+		if !ok {
+			return nil, lisperr.UnexpectedValue{"callable", f}
+		}
+
+		cb := func(a, b types.Value) (types.Value, error) {
+			return callable.Call([]types.Value{a, b})
+		}
+
+		return listops.FoldRight(cb, initial, l)
+	})
+
 	Ternary(e, "fold-left", func(f, initial, l types.Value) (types.Value, error) {
 		// folding is like reduction, except the initial value is always used.
 
