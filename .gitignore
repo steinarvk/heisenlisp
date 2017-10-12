@@ -1,9 +1,6 @@
 *.swp
-/heisenlisp-repl-server
-/heisenlisp-perf-plotter
 /heisenlisp
 /heisenlisp.test
-/tools/heisenlisp-repl-server/heisenlisp-repl-server
 /cover.out
 .heisenlisp_history
 /secrets/
