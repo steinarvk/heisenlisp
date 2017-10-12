@@ -332,40 +332,71 @@ func TestExpressionsTruthy(t *testing.T) {
 			      (not (= 5 result))))`,
 		`(= "(0 (1 (2 (3 (4 nil)))))" (_to-string (fold-right list nil (range 5))))`,
 		`(= "(((((nil 0) 1) 2) 3) 4)" (_to-string (fold-left list nil (range 5))))`,
+		`(contains-duplicates? (list 1 2 3 4 5 2))`,
+		`(not (contains-duplicates? (list 1 2 3 4 5)))`,
+		`(_maybe? (contains-duplicates? (list 1 2 3 4 5 (any-of 5 6))))`,
+		`(not (contains-duplicates? (list 1 2 3 4 5 (any-of 6 7))))`,
+		`(_maybe? (contains-duplicates? (list 1 2 3 4 5 (any-of 6 7) (any-of 7 8))))`,
+		`(_maybe? (contains-duplicates? (list 1 2 3 4 5 unknown)))`,
 	}
 
-	for i, s := range exprs {
+	onExpression := func(category string, i int, s string, aspirational bool) {
 		rv, err := parser.Parse(fmt.Sprintf("<testcase %d>", i), []byte(s))
 		if err != nil {
-			t.Errorf("error parsing #%d %q: %v", i, s, err)
-			continue
+			t.Errorf("error parsing %s #%d %q: %v", category, i, s, err)
+			return
 		}
 
 		exprs, ok := rv.([]interface{})
 		if !ok {
-			t.Errorf("error parsing #%d %q: %v", i, s, err)
+			t.Errorf("error parsing %s #%d %q: %v", category, i, s, err)
 		}
 
 		var result types.Value
 		for j, xpr := range exprs {
 			result, err = xpr.(types.Value).Eval(root)
 			if err != nil {
-				t.Errorf("error evaluating #%d %q (sub-expression %d: %v): %v", i, s, j, xpr, err)
+				if !aspirational {
+					t.Errorf("error evaluating %s #%d %q (sub-expression %d: %v): %v", category, i, s, j, xpr, err)
+				}
 				break
 			}
 		}
 		if err != nil {
-			continue
+			return
 		}
 
 		if unknown.IsUncertain(result) {
-			t.Errorf("uncertain result for #%d %q: %v", i, s, result)
-			continue
+			if !aspirational {
+				t.Errorf("uncertain result for %s #%d %q: %v", category, i, s, result)
+			}
+			return
 		}
 
 		if result.Falsey() {
-			t.Errorf("falsey result for #%d %q: %v", i, s, result)
+			if !aspirational {
+				t.Errorf("falsey result for %s #%d %q: %v", category, i, s, result)
+			}
+			return
 		}
+
+		if aspirational {
+			log.Printf("aspirational expression %q is now true!", s)
+		}
+	}
+
+	for i, s := range exprs {
+		onExpression("main", i, s, false)
+	}
+
+	// These things are for some reason not easy to achieve (without coding
+	// specifically for them).
+	thingsWeWouldLikeToBeTrue := []string{
+		`(contains-duplicates? (list 1 2 3 4 5 (any-of 4 5)))`,
+	}
+
+	for i, s := range thingsWeWouldLikeToBeTrue {
+		onExpression("aspirational", i, s, true)
 	}
 }
 

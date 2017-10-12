@@ -1,0 +1,8 @@
+(defun! contains-duplicates? (lst)
+  ;; Note: clearly not the best way to check for duplicates.
+  ;; This is intrinsically quadratic.
+  ;; But I'm interested in seeing how this naive implementation handles uncertainty.
+  (if (or (nil? lst) (nil? (cdr lst)))
+      false
+      (or (contains? (car lst) (cdr lst))
+          (contains-duplicates? (cdr lst)))))
