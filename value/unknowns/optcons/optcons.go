@@ -15,6 +15,10 @@ type optCons struct {
 	cdr    types.Value
 	mbCons types.Value
 	h      uint32
+
+	hasCachedActualTypename bool
+	cachedActualTypename    []string
+	cachedActualTypenameOK  bool
 }
 
 func (o *optCons) Hashcode() uint32 {
@@ -47,6 +51,14 @@ func (o *optCons) Falsey() bool {
 }
 
 func (o *optCons) ActualTypeName() ([]string, bool) {
+	if !o.hasCachedActualTypename {
+		o.cachedActualTypename, o.cachedActualTypenameOK = o.calculateActualTypeName()
+		o.hasCachedActualTypename = true
+	}
+	return o.cachedActualTypename, o.cachedActualTypenameOK
+}
+
+func (o *optCons) calculateActualTypeName() ([]string, bool) {
 	unkCdr, ok := o.cdr.(types.Unknown)
 	if !ok {
 		tn := o.cdr.TypeName()
