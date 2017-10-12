@@ -689,6 +689,27 @@ func BenchmarkSortList50(b *testing.B) {
 	}
 }
 
+func BenchmarkLengthOfListList500(b *testing.B) {
+	lengthSetupCode := []byte(`
+(set! my-list (range 500))
+`)
+	root := builtin.NewRootEnv()
+	_, err := code.Run(root, "<benchmark setup code>", lengthSetupCode)
+	if err != nil {
+		b.Fatalf("failed to set up benchmark code: %v", err)
+	}
+
+	lengthCode := []byte("(length my-list)")
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := code.Run(root, "<length benchmark code>", lengthCode)
+		if err != nil {
+			b.Fatalf("evaluating benchmark code %q failed: %v", lengthCode, err)
+		}
+	}
+}
+
 func BenchmarkNormalConsFoldLeft500(b *testing.B) {
 	root := builtin.NewRootEnv()
 
