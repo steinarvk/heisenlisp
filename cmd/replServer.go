@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"database/sql"
@@ -17,18 +17,38 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/cobra"
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/secrets"
-
-	_ "github.com/lib/pq"
 )
+
+var replServerCmd = &cobra.Command{
+	Use:   "repl-server",
+	Short: "Web server serving a REPL demo of Heisenlisp",
+	Long: `repl-server starts up a web server serving an interface allowing users
+to play around with Heisenlisp.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := runReplServer(); err != nil {
+			log.Fatal(err)
+		}
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(replServerCmd)
+}
 
 var (
-	listenAddress        = flag.String("listen_address", "127.0.0.1:6861", "http address on which to serve")
-	loggingDatabaseCreds = flag.String("logging_database_credentials", "", "logging database credentials")
+	rsListenAddress        *string
+	rsLoggingDatabaseCreds *string
 )
+
+func init() {
+	rsListenAddress = replServerCmd.Flags().String("listen_address", "127.0.0.1:6861", "http address on which to serve")
+	rsLoggingDatabaseCreds = replServerCmd.Flags().String("logging_database_credentials", "", "logging database credentials")
+}
 
 var (
 	metricRequests = prometheus.NewCounterVec(
@@ -265,14 +285,14 @@ func (d *databaseLogger) logResponse(t1 time.Time, dur time.Duration, id int64, 
 	return err
 }
 
-func main() {
+func runReplServer() error {
 	flag.Parse()
 
 	os.Unsetenv("PGPASSFILE")
 
-	listener, err := net.Listen("tcp", *listenAddress)
+	listener, err := net.Listen("tcp", *rsListenAddress)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	root := builtin.NewRootEnv()
@@ -293,9 +313,9 @@ func main() {
 		return val.String(), nil
 	}
 
-	requestLogger, err := newDatabaseLogger(*loggingDatabaseCreds)
+	requestLogger, err := newDatabaseLogger(*rsLoggingDatabaseCreds)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	handler := func(w http.ResponseWriter, req *http.Request) error {
@@ -372,5 +392,5 @@ func main() {
 
 	log.Printf("listening on: http://%s", listener.Addr())
 
-	log.Fatal(http.Serve(listener, nil))
+	return http.Serve(listener, nil)
 }
