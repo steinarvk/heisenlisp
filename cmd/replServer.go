@@ -22,6 +22,8 @@ import (
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
 	"github.com/steinarvk/secrets"
+
+	_ "github.com/lib/pq"
 )
 
 var replServerCmd = &cobra.Command{
