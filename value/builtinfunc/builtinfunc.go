@@ -41,6 +41,11 @@ type builtinFunctionValue struct {
 	pure     bool
 }
 
+var _ types.Value = &builtinFunctionValue{}
+var _ types.Callable = &builtinFunctionValue{}
+
+func (f *builtinFunctionValue) CallableName() string { return f.name }
+
 func New(name string, pure bool, f func([]types.Value) (types.Value, error)) types.Value {
 	metricNewBuiltinFunction.Inc()
 	return &builtinFunctionValue{name, f, pure}

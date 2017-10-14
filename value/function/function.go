@@ -42,6 +42,11 @@ type functionValue struct {
 	pure       bool
 }
 
+var _ types.Value = &functionValue{}
+var _ types.Callable = &functionValue{}
+
+func (f *functionValue) CallableName() string { return f.name }
+
 func New(env types.Env, name string, formalParams types.Value, body []types.Value) (types.Value, error) {
 	ll, err := lambdalist.Parse(formalParams)
 	if err != nil {

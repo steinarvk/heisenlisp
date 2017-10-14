@@ -3,10 +3,14 @@ package cons
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/hashcode"
+	"github.com/steinarvk/heisenlisp/tracing"
 	"github.com/steinarvk/heisenlisp/types"
 	"github.com/steinarvk/heisenlisp/value/null"
 )
@@ -202,7 +206,26 @@ func (c *consValue) Eval(e types.Env) (types.Value, error) {
 		params[i] = evaled
 	}
 
-	return callable.Call(params)
+	var rv types.Value
+	run := func() {
+		rv, err = callable.Call(params)
+	}
+
+	var pid, tid int
+	tracePre := func(w io.Writer) {
+		pid = syscall.Getpid()
+		tid = 1
+		args := map[string]interface{}{}
+		if tracing.Detailed {
+			args["params"] = fmt.Sprintf("%v", params)
+		}
+		tracing.WriteJSON(w, tracing.BeginEvent, time.Now(), pid, tid, callable.CallableName(), args)
+	}
+	tracePost := func(w io.Writer) {
+		tracing.WriteJSON(w, tracing.EndEvent, time.Now(), pid, tid, callable.CallableName(), nil)
+	}
+	tracing.Run(run, tracePre, tracePost)
+	return rv, err
 }
 
 func (c *consValue) asProperList() ([]types.Value, bool) {

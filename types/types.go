@@ -44,6 +44,7 @@ type Macro interface {
 
 type Callable interface {
 	Value
+	CallableName() string
 	Call([]Value) (Value, error)
 	IsPure() bool
 }
