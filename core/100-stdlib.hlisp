@@ -57,36 +57,74 @@
   (defun! append (&rest lists)
     (fold-right append-two nil lists)))
 
-(defun! partition-ternary (f xs negative-acc zero-acc positive-acc)
+(defun! --partition-ternary (f xs negative-acc zero-acc positive-acc)
   (if (nil? xs)
       (list negative-acc zero-acc positive-acc)
       (let* ((item (car xs))
              (result (f item)))
         (cond
           ((must? (> result 0))
-           (partition-ternary f (cdr xs) negative-acc zero-acc (cons item positive-acc)))
+           (--partition-ternary f (cdr xs) negative-acc zero-acc (cons item positive-acc)))
           ((must? (< result 0))
-           (partition-ternary f (cdr xs) (cons item negative-acc) zero-acc positive-acc))
+           (--partition-ternary f (cdr xs) (cons item negative-acc) zero-acc positive-acc))
           (true
-           (partition-ternary f (cdr xs) negative-acc (cons item zero-acc) positive-acc))))))
+           (--partition-ternary f (cdr xs) negative-acc (cons item zero-acc) positive-acc))))))
 
-(letfunc* ((categoriser (pivot)
-             (lambda (x)
-               (cond
-                 ((must? (> x pivot)) 1)
-                 ((must? (< x pivot)) -1)
-                 (true 0)))))
-  (defun! sorted (xs)
+(defun! up-to-first-n (n xs)
+  (if (or (<= n 0) (nil? xs))
+      nil
+      (cons (car xs) (up-to-first-n (- n 1) (cdr xs)))))
+
+(defun! is-shorter-than? (n xs)
+  (if (<= n 0)
+      false
+      (if (nil? xs)
+          true
+          (is-shorter-than? (- n 1) (cdr xs)))))
+
+;; note: letfunc doesn't work with recursion yet. TODO.
+(defun! --middle-having-dropped (xs i n)
+  (cond ((nil? (cdr xs)) (car xs))
+        ((>= (+ (* 2 i) 1) n) (car xs))
+        (true (--middle-having-dropped (cdr xs) (+ i 1) n))))
+
+(defun! middle (xs)
+  (--middle-having-dropped xs 0 (length xs)))
+
+(defun! --sorted-categoriser (pivot)
+  (lambda (x)
+    (cond
+      ((must? (> x pivot)) 1)
+      ((must? (< x pivot)) -1)
+      (true 0))))
+
+(defun! --sorted-with-naive-pivot (xs)
+  (cond
+    ((nil? xs) nil)
+    ((nil? (cdr xs)) xs)
+    (true
+      (let* ((pivot (car xs))
+             (lists (--partition-ternary (--sorted-categoriser pivot) (cdr xs) nil nil nil))
+             (smaller (first lists))
+             (same (second lists))
+             (larger (third lists)))
+        (append (--sorted-with-naive-pivot smaller) (list* pivot same) (--sorted-with-naive-pivot larger))))))
+
+(defun! --sorted-select-pivot (xs)
+  (middle (--sorted-with-naive-pivot (up-to-first-n 10 xs))))
+
+(defun! sorted (xs)
     (cond
       ((nil? xs) nil)
       ((nil? (cdr xs)) xs)
+      ((is-shorter-than? 10 xs) (--sorted-with-naive-pivot xs))
       (true
-        (let* ((pivot (car xs))
-               (lists (partition-ternary (categoriser pivot) (cdr xs) nil nil nil))
+        (let* ((pivot (--sorted-select-pivot xs))
+               (lists (--partition-ternary (--sorted-categoriser pivot) xs nil nil nil))
                (smaller (first lists))
                (same (second lists))
                (larger (third lists)))
-          (append (sorted smaller) (list* pivot same) (sorted larger)))))))
+          (append (sorted smaller) same (sorted larger))))))
 
 (defun! to-floating-point (x) (+ 0.0 x))
 
