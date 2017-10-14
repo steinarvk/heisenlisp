@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/chzyer/readline"
 	"github.com/fatih/color"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
@@ -42,9 +39,7 @@ var (
 )
 
 func init() {
-	replScript = replCmd.Flags().String("script", "", "execute script in filename instead of stdin")
-	replListenAddress = replCmd.Flags().String("listen_address", "127.0.0.1:6860", "http address on which to serve metrics")
-	replMetrics = replCmd.Flags().Bool("metrics", true, "whether to serve metrics")
+	replScript = replCmd.Flags().String("script", "", "execute script from filename before reading from stdin")
 }
 
 func mainCoreREPL() error {
@@ -126,28 +121,6 @@ func mainCoreREPL() error {
 	return nil
 }
 
-func serveMetrics(addr string) error {
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-
-	http.Handle("/metrics", promhttp.Handler())
-	log.Printf("listening on: http://%s/metrics", listener.Addr())
-	go func() {
-		// Listen forever, unless something goes wrong.
-		log.Fatal(http.Serve(listener, nil))
-	}()
-
-	return nil
-}
-
 func runREPL() error {
-	if *replMetrics {
-		if err := serveMetrics(*replListenAddress); err != nil {
-			log.Printf("unable to serve metrics: %v", err)
-		}
-	}
-
 	return mainCoreREPL()
 }

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -16,7 +15,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
@@ -43,12 +41,10 @@ func init() {
 }
 
 var (
-	rsListenAddress        *string
 	rsLoggingDatabaseCreds *string
 )
 
 func init() {
-	rsListenAddress = replServerCmd.Flags().String("listen_address", "127.0.0.1:6861", "http address on which to serve")
 	rsLoggingDatabaseCreds = replServerCmd.Flags().String("logging_database_credentials", "", "logging database credentials")
 }
 
@@ -292,7 +288,7 @@ func runReplServer() error {
 
 	os.Unsetenv("PGPASSFILE")
 
-	listener, err := net.Listen("tcp", *rsListenAddress)
+	lst, err := getListener()
 	if err != nil {
 		return err
 	}
@@ -376,7 +372,6 @@ func runReplServer() error {
 		return nil
 	}
 
-	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/api/eval", func(w http.ResponseWriter, req *http.Request) {
 		metricRequests.WithLabelValues("api-eval").Inc()
 		if err := handler(w, req); err != nil {
@@ -392,7 +387,12 @@ func runReplServer() error {
 		w.Write(mainPageData)
 	})
 
-	log.Printf("listening on: http://%s", listener.Addr())
+	log.Printf("ready to serve REPL on: http://%s", lst.Addr())
 
-	return http.Serve(listener, nil)
+	// Loop forever. Serving in another goroutine.
+	for {
+		time.Sleep(time.Hour)
+	}
+
+	return nil
 }

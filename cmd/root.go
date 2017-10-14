@@ -4,8 +4,12 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"net"
+	"net/http"
 	"os"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/tracing"
@@ -15,17 +19,44 @@ var (
 	verbose             *bool
 	calltracingFilename *string
 	calltracingDetailed *bool
+	listenAddress       *string
+	activateMetrics     *bool
+	keepAliveAfter      *bool
 )
 
 func init() {
 	verbose = RootCmd.PersistentFlags().Bool("verbose", false, "increase verbosity")
 	calltracingFilename = RootCmd.PersistentFlags().String("output_calltrace", "", "write a JSON call trace to file")
 	calltracingDetailed = RootCmd.PersistentFlags().Bool("detailed_calltrace", false, "enable detailed call tracing, even at severe performance cost")
+	listenAddress = RootCmd.PersistentFlags().String("listen_address", "127.0.0.1:6860", "http address on which to serve metrics")
+	activateMetrics = RootCmd.PersistentFlags().Bool("metrics", true, "serve Prometheus metrics")
+	keepAliveAfter = RootCmd.PersistentFlags().Bool("keep_alive", false, "keep process alive after main command terminates (to serve metrics)")
 }
 
 const (
 	calltracingBufsize = 1048576
 )
+
+var globalListener net.Listener
+
+func getListener() (net.Listener, error) {
+	if globalListener != nil {
+		return globalListener, nil
+	}
+
+	listener, err := net.Listen("tcp", *listenAddress)
+	if err != nil {
+		return nil, err
+	}
+	globalListener = listener
+
+	go func() {
+		// Listen forever, unless something goes wrong.
+		log.Fatal(http.Serve(globalListener, nil))
+	}()
+
+	return globalListener, nil
+}
 
 var callTracingFile *os.File
 var callTracingBufWriter *bufio.Writer
@@ -57,6 +88,16 @@ var RootCmd = &cobra.Command{
 
 			tracing.Enabled = true
 		}
+
+		if *activateMetrics {
+			lst, err := getListener()
+			if err != nil {
+				log.Printf("error: unable to get listener for metrics: %v", err)
+			} else {
+				http.Handle("/metrics", promhttp.Handler())
+				log.Printf("serving metrics on: http://%s/metrics", lst.Addr())
+			}
+		}
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if callTracingBufWriter != nil {
@@ -66,6 +107,13 @@ var RootCmd = &cobra.Command{
 		if callTracingFile != nil {
 			if err := callTracingFile.Close(); err != nil {
 				log.Fatal(err)
+			}
+		}
+
+		if *keepAliveAfter {
+			log.Printf("command completed, keeping process alive")
+			for {
+				time.Sleep(time.Hour)
 			}
 		}
 	},
