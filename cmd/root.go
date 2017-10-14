@@ -79,6 +79,8 @@ var RootCmd = &cobra.Command{
 				}
 				callTracingFile = f
 				w = f
+			} else {
+				w = os.Stdout
 			}
 
 			callTracingBufWriter = bufio.NewWriterSize(w, calltracingBufsize)
