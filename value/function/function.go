@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinarvk/heisenlisp/hashcode"
 	"github.com/steinarvk/heisenlisp/lambdalist"
+	"github.com/steinarvk/heisenlisp/lisperr"
 	"github.com/steinarvk/heisenlisp/macroexpand"
 	"github.com/steinarvk/heisenlisp/purity"
 	"github.com/steinarvk/heisenlisp/types"
@@ -72,11 +73,11 @@ func New(env types.Env, name string, formalParams types.Value, body []types.Valu
 }
 
 func (_ *functionValue) TypeName() string { return "function" }
-func (f *functionValue) errorprefix() string {
+func (f *functionValue) errorcontext() string {
 	if f.name == "" {
-		return "(anonymous function): "
+		return "(anonymous function)"
 	}
-	return fmt.Sprintf("%s: ", f.name)
+	return f.name
 }
 
 func (f *functionValue) Call(params []types.Value) (types.Value, error) {
@@ -86,13 +87,12 @@ func (f *functionValue) Call(params []types.Value) (types.Value, error) {
 	env, err := f.lambdaList.BindArgs(f.lexicalEnv, params, f.pure)
 	if err != nil {
 		return nil, err
-		// return nil, fmt.Errorf("%s%v", f.errorprefix(), err)
 	}
 
 	for _, stmt := range f.body {
 		rv, err = stmt.Eval(env)
 		if err != nil {
-			return nil, err
+			return nil, lisperr.Wrap(f.errorcontext(), err)
 		}
 	}
 

@@ -3,22 +3,28 @@ package lisperr
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/steinarvk/heisenlisp/types"
 )
 
 type LispException struct {
-	value types.Value
+	context []string
+	value   types.Value
 }
 
 func NewException(v types.Value) LispException {
-	return LispException{v}
+	return LispException{nil, v}
 }
 
 func (e LispException) Value() types.Value { return e.value }
 
 func (e LispException) Error() string {
-	return fmt.Sprintf("exception: %v", e.value)
+	rv := []string{"exception: "}
+	for i := len(e.context) - 1; i >= 0; i-- {
+		rv = append(rv, e.context[i], ": ")
+	}
+	return fmt.Sprintf("%s%v", strings.Join(rv, ""), e.value)
 }
 
 type UnexpectedValue struct {
@@ -41,3 +47,15 @@ func (u UnboundVariable) Error() string {
 type NotImplemented string
 
 func (n NotImplemented) Error() string { return fmt.Sprintf("not implemented: %s", string(n)) }
+
+func Wrap(ctx string, err error) error {
+	// if it's a LispException going in, it should be one going out as well
+	if exc, ok := err.(LispException); ok {
+		return LispException{
+			context: append(exc.context, ctx),
+			value:   exc.value,
+		}
+	}
+
+	return fmt.Errorf("%s: %v", ctx, err)
+}
