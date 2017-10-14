@@ -19,6 +19,7 @@ var (
 	verbose             *bool
 	calltracingFilename *string
 	calltracingDetailed *bool
+	calltracingBuffered *bool
 	listenAddress       *string
 	activateMetrics     *bool
 	keepAliveAfter      *bool
@@ -28,6 +29,7 @@ func init() {
 	verbose = RootCmd.PersistentFlags().Bool("verbose", false, "increase verbosity")
 	calltracingFilename = RootCmd.PersistentFlags().String("output_calltrace", "", "write a JSON call trace to file")
 	calltracingDetailed = RootCmd.PersistentFlags().Bool("detailed_calltrace", false, "enable detailed call tracing, even at severe performance cost")
+	calltracingBuffered = RootCmd.PersistentFlags().Bool("buffered_calltrace", true, "use an output buffer for writing call trace")
 	listenAddress = RootCmd.PersistentFlags().String("listen_address", "127.0.0.1:6860", "http address on which to serve metrics")
 	activateMetrics = RootCmd.PersistentFlags().Bool("metrics", true, "serve Prometheus metrics")
 	keepAliveAfter = RootCmd.PersistentFlags().Bool("keep_alive", false, "keep process alive after main command terminates (to serve metrics)")
@@ -83,10 +85,14 @@ var RootCmd = &cobra.Command{
 				w = os.Stdout
 			}
 
-			callTracingBufWriter = bufio.NewWriterSize(w, calltracingBufsize)
-			callTracingBufWriter.Write([]byte("[\n"))
+			if *calltracingBuffered {
+				callTracingBufWriter = bufio.NewWriterSize(w, calltracingBufsize)
+				tracing.Target = callTracingBufWriter
+			} else {
+				tracing.Target = w
+			}
 
-			tracing.Target = callTracingBufWriter
+			tracing.Target.Write([]byte("[\n"))
 
 			tracing.Enabled = true
 		}
@@ -103,8 +109,10 @@ var RootCmd = &cobra.Command{
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if callTracingBufWriter != nil {
-			callTracingBufWriter.Write([]byte("]\n"))
 			callTracingBufWriter.Flush()
+		}
+		if tracing.Enabled {
+			tracing.Target.Write([]byte("]\n"))
 		}
 		if callTracingFile != nil {
 			if err := callTracingFile.Close(); err != nil {
