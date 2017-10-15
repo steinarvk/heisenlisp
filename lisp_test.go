@@ -393,6 +393,7 @@ func TestExpressionsTruthy(t *testing.T) {
 	// specifically for them).
 	thingsWeWouldLikeToBeTrue := []string{
 		`(contains-duplicates? (list 1 2 3 4 5 (any-of 4 5)))`,
+		`(letfunc* ((my-fact (n) (if (= 0 n) 1 (* n (my-fact (- n 1)))))) (= (my-fact 5) 120))`,
 	}
 
 	for i, s := range thingsWeWouldLikeToBeTrue {
