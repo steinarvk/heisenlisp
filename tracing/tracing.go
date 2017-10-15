@@ -13,11 +13,12 @@ var Target io.Writer = os.Stdout
 var Detailed bool = false
 
 func Run(core func(), pre, post func(w io.Writer)) {
-	if Enabled {
+	wasEnabled := Enabled
+	if wasEnabled {
 		pre(Target)
 	}
 	core()
-	if Enabled {
+	if wasEnabled {
 		post(Target)
 	}
 }
