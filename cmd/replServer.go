@@ -19,6 +19,7 @@ import (
 	"github.com/steinarvk/heisenlisp/builtin"
 	"github.com/steinarvk/heisenlisp/code"
 	"github.com/steinarvk/heisenlisp/env"
+	"github.com/steinarvk/heisenlisp/version"
 	"github.com/steinarvk/secrets"
 
 	_ "github.com/lib/pq"
@@ -372,6 +373,26 @@ func runReplServer() error {
 		return nil
 	}
 
+	http.HandleFunc("/api/version-info", func(w http.ResponseWriter, req *http.Request) {
+		metricRequests.WithLabelValues("version-info").Inc()
+		responseData, err := json.Marshal(struct {
+			Version   string `json:"version"`
+			Commit    string `json:"commit"`
+			BuildTime string `json:"build_time"`
+		}{
+			Version:   version.VersionString,
+			Commit:    version.CommitHash,
+			BuildTime: version.BuildTimestampISO8601,
+		})
+		if err != nil {
+			log.Printf("error handling /api/version-info: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(responseData)
+		log.Printf("successfully handled /api/version-info request")
+	})
 	http.HandleFunc("/api/eval", func(w http.ResponseWriter, req *http.Request) {
 		metricRequests.WithLabelValues("api-eval").Inc()
 		if err := handler(w, req); err != nil {
